@@ -2,9 +2,6 @@
 
 A Model Context Protocol (MCP) server that provides tools for safely interacting with public YouTube data via the official YouTube Data API v3 and OAuth 2.0.
 
-[![npm version](https://badge.fury.io/js/@mrsknetwork%2Fytmcp.svg)](https://badge.fury.io/js/@mrsknetwork%2Fytmcp)
-[![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](https://opensource.org/licenses/ISC)
-
 ## Features
 
 - **Privacy-First:** Strictly exposes only public YouTube data endpoints. Verified against AI ethics guidelines to prevent unauthorized extraction of private user context.
@@ -20,7 +17,7 @@ The following tools are exposed to any compatible MCP client (like Claude Deskto
 |-----------|-------------|
 | `search_youtube_content` | Search public videos, channels, and playlists. |
 | `get_video_details` | View video statistics, descriptions, and metadata. |
-| `download_video_caption` | Download auto-generated or manual transcripts via `yt-dlp`. |
+| `download_video_caption` | Download and automatically parse clear-text transcripts via `yt-dlp`. |
 | `get_channel_details` | Inspect public channel subscriber counts and profiles. |
 | `get_playlists` | Get public user playlists. |
 | `get_playlist_items` | Look up videos inside a playlist. |
@@ -32,6 +29,13 @@ The following tools are exposed to any compatible MCP client (like Claude Deskto
 
 *(Tool capabilities matching YouTube Data API `GET` resources)*
 
+### 📝 Transcript Output Example (`download_video_caption`)
+Our `yt-dlp` integration includes a built-in Regex WebVTT parser. It strips all HTML tags, `-->` timestamps, and `align:` metadata, while automatically filtering out overlapping duplicate AI-caption lines, delivering **pure LLM-ready text content**:
+
+```text
+Today I'm going to be showing you guys five simple hacks that you can use to make sure that Cloud Code is building you websites that don't look like they were AI vibe coded, but they actually feel professional and branded. And we're going to be going through this in a way where even if you've never used Cloud Code before, that's completely fine.
+```
+
 ## 1. Setup Environment Variables
 
 Create a `.env` file in the root directory where you are running the server.
@@ -40,8 +44,6 @@ Create a `.env` file in the root directory where you are running the server.
 GOOGLE_CLIENT_ID="your-google-oauth-client-id"
 GOOGLE_CLIENT_SECRET="your-google-oauth-client-secret"
 ```
-
-> **Security Note**: Never commit your `.env` file to version control. It is already included in `.gitignore`.
 
 ### Acquiring Credentials
 1. Go to the [Google Cloud Console](https://console.cloud.google.com/).
