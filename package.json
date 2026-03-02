@@ -5,7 +5,7 @@
   "main": "build/server/index.js",
   "mcpName": "io.github.mrsknetwork/ytmcp",
   "bin": {
-    "ytmcp": "./build/server/index.js"
+    "ytmcp": "build/server/index.js"
   },
   "scripts": {
     "build": "tsc",
