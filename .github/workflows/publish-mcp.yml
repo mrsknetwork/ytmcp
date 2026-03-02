@@ -36,7 +36,7 @@ jobs:
       - name: Build package
         run: npm run build --if-present
 
-      - name: Publish package to npm
+      - name: Publish to NPM
         run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
