@@ -9,5 +9,4 @@ dist/
 # Secrets
 .env
 tokens.json
-.agents/
 
