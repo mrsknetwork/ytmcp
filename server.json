@@ -5,7 +5,10 @@
     "description": "Interact with public YouTube data via the official Data API v3",
     "version": "1.0.0",
     "homepage": "https://github.com/mrsknetwork/ytmcp",
-    "repository": "https://github.com/mrsknetwork/ytmcp.git",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/mrsknetwork/ytmcp.git"
+    },
     "license": "ISC",
     "author": {
         "name": "Kamesh"
