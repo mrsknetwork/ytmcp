@@ -38,7 +38,9 @@ RUN npm install --omit=dev
 # Copy the compiled build from the builder stage
 COPY --from=builder /app/build ./build
 
-# Define production environment
+# Environment variables (To be provided at runtime)
+# ENV GOOGLE_CLIENT_ID=""
+# ENV GOOGLE_CLIENT_SECRET=""
 ENV GOOGLE_REDIRECT_URI="http://localhost:3000/oauth2callback"
 ENV NODE_ENV=production
 ENV PORT=3000
