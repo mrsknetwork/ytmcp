@@ -11,6 +11,7 @@ import {
 import { google } from "googleapis";
 import { authorize } from "./auth.js";
 import dotenv from "dotenv";
+import ytDlp from "yt-dlp-exec";
 
 
 if (!process.env.GOOGLE_CLIENT_ID) {
@@ -199,6 +200,17 @@ async function runServer() {
                         type: "object",
                         properties: {
                             video_id: { type: "string", description: "The video ID" },
+                        },
+                        required: ["video_id"],
+                    },
+                },
+                {
+                    name: "download_video_caption",
+                    description: "Download the transcript/caption text of a YouTube video using yt-dlp (bypasses API restrictions).",
+                    inputSchema: {
+                        type: "object",
+                        properties: {
+                            video_id: { type: "string", description: "The ID of the YouTube video to download the transcript for" },
                         },
                         required: ["video_id"],
                     },
@@ -405,6 +417,49 @@ async function runServer() {
                         videoId: args.video_id,
                     });
                     return { content: [{ type: "text", text: JSON.stringify(res.data, null, 2) }] };
+                }
+
+                case "download_video_caption": {
+                    if (!args || !isString(args.video_id)) throw new Error("Missing video_id");
+                    try {
+                        const output: any = await ytDlp(`https://www.youtube.com/watch?v=${args.video_id}`, {
+                            dumpJson: true,
+                            skipDownload: true,
+                        });
+
+                        const subs = output.subtitles || {};
+                        const autoSubs = output.automatic_captions || {};
+
+                        // Try to find English captions first, then fallback to any available
+                        let targetLanguage = 'en';
+                        let captionsList = subs[targetLanguage] || autoSubs[targetLanguage] || subs['en-US'] || autoSubs['en-US'];
+
+                        if (!captionsList) {
+                            const availableLangs = [...Object.keys(subs), ...Object.keys(autoSubs)];
+                            if (availableLangs.length === 0) {
+                                return { content: [{ type: "text", text: "No captions available for this video." }] };
+                            }
+                            targetLanguage = availableLangs[0];
+                            captionsList = subs[targetLanguage] || autoSubs[targetLanguage];
+                        }
+
+                        // Prefer VTT format, fallback to the first available format
+                        const captionTrack = captionsList.find((c: any) => c.ext === 'vtt') || captionsList[0];
+                        if (!captionTrack || !captionTrack.url) {
+                            return { content: [{ type: "text", text: "Caption track URL not found in metadata." }] };
+                        }
+
+                        // Fetch the caption text
+                        const captionRes = await fetch(captionTrack.url);
+                        if (!captionRes.ok) {
+                            return { content: [{ type: "text", text: `Failed to download caption: ${captionRes.statusText}` }], isError: true };
+                        }
+
+                        const text = await captionRes.text();
+                        return { content: [{ type: "text", text }] };
+                    } catch (e: any) {
+                        return { content: [{ type: "text", text: `Error fetching transcript via yt-dlp: ${e.message}` }], isError: true };
+                    }
                 }
 
 
