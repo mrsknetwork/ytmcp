@@ -456,7 +456,25 @@ async function runServer() {
                         }
 
                         const text = await captionRes.text();
-                        return { content: [{ type: "text", text }] };
+                        let parsedText = text;
+
+                        if (captionTrack.ext === 'vtt' || text.includes('WEBVTT')) {
+                            const cleaned = text
+                                .replace(/^WEBVTT.*?(\r?\n\r?\n)/s, '')
+                                .replace(/^\d{2}:\d{2}:\d{2}\.\d{3} --> \d{2}:\d{2}:\d{2}\.\d{3}.*?\r?\n/gm, '')
+                                .replace(/<[^>]+>/g, '');
+
+                            const lines = cleaned.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+                            const resLines: string[] = [];
+                            for (const l of lines) {
+                                if (resLines.length === 0 || resLines[resLines.length - 1] !== l) {
+                                    resLines.push(l);
+                                }
+                            }
+                            parsedText = resLines.join(' ');
+                        }
+
+                        return { content: [{ type: "text", text: parsedText }] };
                     } catch (e: any) {
                         return { content: [{ type: "text", text: `Error fetching transcript via yt-dlp: ${e.message}` }], isError: true };
                     }
