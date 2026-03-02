@@ -1,0 +1,12 @@
+node_modules
+build
+dist
+.git
+.github
+.env
+tokens.json
+mcp-publisher
+.agents/
+.agent
+package-lock.json
+npm-debug.log
