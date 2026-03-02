@@ -2,13 +2,6 @@
 
 A Model Context Protocol (MCP) server that provides tools for safely interacting with public YouTube data via the official YouTube Data API v3 and OAuth 2.0.
 
-## Features
-
-- **Privacy-First:** Strictly exposes only public YouTube data endpoints. Verified against AI ethics guidelines to prevent unauthorized extraction of private user context.
-- **Robust Transcripts:** Includes `yt-dlp` integration to bypass common API 403 errors and reliably extract video captions/transcripts.
-- **Secure Architecture:** Tokens are requested via a temporary localhost Express Server, requiring no manual copy-pasting, and are securely cached using OS file permissions.
-- **Zero Configuration Run:** After initial `.env` setup, run globally from any terminal.
-
 ## Available Tools
 
 The following tools are exposed to any compatible MCP client (like Claude Desktop, Cursor, or Supernova):
@@ -29,13 +22,6 @@ The following tools are exposed to any compatible MCP client (like Claude Deskto
 
 *(Tool capabilities matching YouTube Data API `GET` resources)*
 
-### 📝 Transcript Output Example (`download_video_caption`)
-Our `yt-dlp` integration includes a built-in Regex WebVTT parser. It strips all HTML tags, `-->` timestamps, and `align:` metadata, while automatically filtering out overlapping duplicate AI-caption lines, delivering **pure LLM-ready text content**:
-
-```text
-Today I'm going to be showing you guys five simple hacks that you can use to make sure that Cloud Code is building you websites that don't look like they were AI vibe coded, but they actually feel professional and branded. And we're going to be going through this in a way where even if you've never used Cloud Code before, that's completely fine.
-```
-
 ## 1. Setup Environment Variables
 
 Create a `.env` file in the root directory where you are running the server.
@@ -54,15 +40,20 @@ GOOGLE_CLIENT_SECRET="your-google-oauth-client-secret"
 
 ## 2. Installation and Usage
 
-### Option A: Run via NPM (Recommended)
+To install and use this MCP server with Claude Desktop, Cursor, or Supernova, add it to your configuration file (e.g., `claude_desktop_config.json`):
 
-You can run the server seamlessly using `npx`:
-
-```bash
-npx -y @mrsknetwork/ytmcp
+```json
+{
+  "mcpServers": {
+    "youtube-mcp": {
+      "command": "npx",
+      "args": ["-y", "@mrsknetwork/ytmcp"]
+    }
+  }
+}
 ```
 
-### Option B: Local Development
+### Local Development
 
 1. **Clone and Install:**
    ```bash
@@ -85,13 +76,6 @@ When you run the server for the first time, it will automatically open a Google 
 Authorize the application. Upon success, a `tokens.json` file will be generated locally so you don't continually need to authenticate.
 
 *Note: The authorization server spins up a small local express app strictly on `127.0.0.1:3000` to capture the callback securely.*
-
-## FAQ: OAuth 2.0 vs API Keys
-
-**Why does this package use OAuth 2.0 instead of a simpler API Key?**
-
-- **API Keys** are lightweight and perfect for accessing purely *public* data (like searching videos or reading comments). They don't require user consent screens.
-- **OAuth 2.0** is required for accessing *private* user data or interacting on a user's behalf. Since this MCP server includes tools like `get_subscriptions_list(mine: true)` and `get_memberships_levels`, OAuth 2.0 is mandatory to authorize those specific scopes securely.
 
 ## License
 
