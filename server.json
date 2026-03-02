@@ -1,0 +1,41 @@
+{
+    "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+    "name": "io.github.mrsknetwork/ytmcp",
+    "title": "YouTube MCP",
+    "description": "Interact with public YouTube data via the official Data API v3",
+    "version": "1.0.0",
+    "homepage": "https://github.com/mrsknetwork/ytmcp",
+    "repository": "https://github.com/mrsknetwork/ytmcp.git",
+    "license": "ISC",
+    "author": {
+        "name": "Kamesh"
+    },
+    "keywords": [
+        "youtube",
+        "mcp",
+        "api",
+        "video",
+        "channel",
+        "playlist",
+        "comment",
+        "transcript",
+        "caption",
+        "category",
+        "language",
+        "region",
+        "supported",
+        "localization",
+        "oauth",
+        "youtube-dlp"
+    ],
+    "packages": [
+        {
+            "registryType": "npm",
+            "identifier": "@mrsknetwork/ytmcp",
+            "version": "1.0.0",
+            "transport": {
+                "type": "stdio"
+            }
+        }
+    ]
+}

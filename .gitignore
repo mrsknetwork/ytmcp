@@ -1,0 +1,13 @@
+# Dependencies
+node_modules/
+
+# Build artifacts
+build/
+dist/
+*.tsbuildinfo
+
+# Secrets
+.env
+tokens.json
+.agents/
+

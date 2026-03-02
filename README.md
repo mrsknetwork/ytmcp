@@ -40,7 +40,7 @@ GOOGLE_CLIENT_SECRET="your-google-oauth-client-secret"
 
 ## 2. Installation and Usage
 
-To install and use this MCP server with Claude Desktop, Cursor, or Supernova, add it to your configuration file (e.g., `claude_desktop_config.json`):
+To install and use this MCP server with Claude Desktop, Cursor, or Antigravity, add it to your MCP server configuration:
 
 ```json
 {
