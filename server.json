@@ -4,33 +4,12 @@
     "title": "YouTube MCP",
     "description": "Interact with public YouTube data via the official Data API v3",
     "version": "1.0.0",
-    "homepage": "https://github.com/mrsknetwork/ytmcp",
+    "websiteUrl": "https://github.com/mrsknetwork/ytmcp",
     "repository": {
-        "type": "git",
+        "source": "github",
         "url": "https://github.com/mrsknetwork/ytmcp.git"
     },
     "license": "ISC",
-    "author": {
-        "name": "Kamesh"
-    },
-    "keywords": [
-        "youtube",
-        "mcp",
-        "api",
-        "video",
-        "channel",
-        "playlist",
-        "comment",
-        "transcript",
-        "caption",
-        "category",
-        "language",
-        "region",
-        "supported",
-        "localization",
-        "oauth",
-        "youtube-dlp"
-    ],
     "packages": [
         {
             "registryType": "npm",
