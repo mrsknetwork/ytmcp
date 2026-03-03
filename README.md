@@ -1,82 +1,119 @@
-﻿# YouTube MCP (@mrsknetwork/ytmcp)
+# YouTube MCP (@mrsknetwork/ytmcp)
 
-A Model Context Protocol (MCP) server that provides tools for safely interacting with public YouTube data via the official YouTube Data API v3 and OAuth 2.0.
+[![npm version](https://img.shields.io/npm/v/@mrsknetwork/ytmcp.svg)](https://www.npmjs.com/package/@mrsknetwork/ytmcp)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-## Available Tools
+A Model Context Protocol (MCP) server that provides AI assistants (including Claude Desktop, Cursor, VS Code, and Antigravity) with tools for interacting with public and private YouTube data.
 
-The following tools are exposed to any compatible MCP client (like Claude Desktop, Cursor, or Supernova):
+This server interfaces securely with the official YouTube Data API v3 and supports a tiered authentication system for maximum flexibility and reliability.
 
-| Tool Name | Description |
-|-----------|-------------|
-| `search_youtube_content` | Search public videos, channels, and playlists. |
-| `get_video_details` | View video statistics, descriptions, and metadata. |
-| `download_video_caption` | Download and automatically parse clear-text transcripts via `yt-dlp`. |
-| `get_channel_details` | Inspect public channel subscriber counts and profiles. |
-| `get_playlists` | Get public user playlists. |
-| `get_playlist_items` | Look up videos inside a playlist. |
-| `get_comment_threads` | Fetch top-level comment threads for a video. |
-| `get_comments_replies` | Fetch specific comment replies. |
-| `get_video_captions_metadata` | Fetch available caption track metadata for a video. |
-| `get_video_categories` | Get localized video categories. |
-| `get_supported_languages` / `Regions`| Check YouTube localization support. |
+## Features and Capabilities
 
-*(Tool capabilities matching YouTube Data API `GET` resources)*
+* **Tiered Authentication System:**
+  * **API Key Mode:** Instantly access public data using a provisioned API key.
+  * **OAuth2 Mode:** Access private user data (subscriptions, memberships, playlists) with automatic token refresh and incremental authorization.
+  * **Guest Mode:** The server remains operational without credentials. Scraper-dependent tools, such as `download_video_caption`, function via `yt-dlp` extraction methods.
+* **Security:** Implements protected OAuth callbacks, automated server timeouts, and a built-in `revoke_authentication` tool for secure session termination.
+* **Transcripts:** Extracts clean-text video transcripts directly, bypassing API restrictions via `yt-dlp` integration.
 
-## 1. Setup Environment Variables
+## Installation and Quick Start
 
-Create a `.env` file in the root directory where you are running the server.
+The recommended initialization method utilizes an existing YouTube Data API Key. This provides access to all public data endpoints (Search, Details, Captions).
 
-```env
-GOOGLE_CLIENT_ID="your-google-oauth-client-id"
-GOOGLE_CLIENT_SECRET="your-google-oauth-client-secret"
-```
-
-### Acquiring Credentials
-1. Go to the [Google Cloud Console](https://console.cloud.google.com/).
-2. Create or select a project.
-3. Enable the **YouTube Data API v3**.
-4. Navigate to **APIs & Services > Credentials**.
-5. Create an **OAuth 2.0 Client ID** (Application type: "Web application", Authorized redirect URIs: `http://localhost:3000/oauth2callback`).
-
-## 2. Installation and Usage
-
-To install and use this MCP server with Claude Desktop, Cursor, or Antigravity, add it to your MCP server configuration:
+Add the following configuration to your MCP client:
 
 ```json
 {
   "mcpServers": {
     "youtube-mcp": {
       "command": "npx",
-      "args": ["-y", "@mrsknetwork/ytmcp"]
+      "args": [
+        "-y",
+        "@mrsknetwork/ytmcp@latest",
+        "YOUR_GOOGLE_API_KEY"
+      ]
     }
   }
 }
 ```
 
-### Local Development
+## Advanced Configuration: OAuth 2.0
 
-1. **Clone and Install:**
+Accessing private data requires OAuth 2.0 configuration.
+
+### 1. Acquire Credentials
+1. Navigate to the [Google Cloud Console](https://console.cloud.google.com/).
+2. Create a project and enable the **YouTube Data API v3**.
+3. Navigate to **APIs & Services > Credentials**.
+4. Create an **OAuth 2.0 Client ID** (Application type: "Web application").
+5. Specify the Authorized Redirect URI: `http://localhost:3000/oauth2callback`.
+
+### 2. Client Configuration
+Define the credentials within your client's environment variables. The server will detect these variables, prioritize them over the positional API Key argument, and initiate the OAuth2 authorization flow upon the first tool execution.
+
+```json
+{
+  "mcpServers": {
+    "youtube-mcp": {
+      "command": "npx",
+      "args": ["-y", "@mrsknetwork/ytmcp@latest"],
+      "env": {
+        "GOOGLE_CLIENT_ID": "your-google-oauth-client-id",
+        "GOOGLE_CLIENT_SECRET": "your-google-oauth-client-secret"
+      }
+    }
+  }
+}
+```
+
+*Note: The initial OAuth tool invocation will generate a secure URL requiring explicit browser authorization.*
+
+## Available Tools Reference
+
+| Tool Name | Description | Requires Authentication |
+|-----------|-------------|-------------------------|
+| `download_video_caption` | Extracts clear-text video transcripts via `yt-dlp`. | No (Guest Mode Supported) |
+| `search_youtube_content` | Performs queries for videos, channels, and playlists. | API Key or OAuth |
+| `get_video_details` | Retrieves video statistics, descriptions, and metadata. | API Key or OAuth |
+| `get_channel_details` | Retrieves channel subscriber metrics and profiles. | API Key or OAuth |
+| `get_playlists` | Retrieves user or channel playlists. | API Key or OAuth |
+| `get_playlist_items` | Retrieves the video index within a specified playlist. | API Key or OAuth |
+| `get_comment_threads` | Retrieves top-level comment threads for a video. | API Key or OAuth |
+| `get_comments_replies` | Retrieves specific reply threads to top-level comments. | API Key or OAuth |
+| `get_subscriptions_list` | Retrieves subscription data. | **OAuth Only** |
+| `get_memberships_levels` | Retrieves membership pricing tiers for a channel. | **OAuth Only** |
+| `revoke_authentication` | Terminates the active session and deletes stored tokens. | **OAuth Only** |
+
+## Source Installation and Development
+
+To compile and execute the server directly from source:
+
+1. **Clone the Repository:**
    ```bash
    git clone https://github.com/mrsknetwork/youtube-mcp.git
    cd youtube-mcp
    npm install
    ```
-2. **Build:**
+2. **Compile the TypeScript Source:**
    ```bash
    npm run build
    ```
-3. **Start the Server:**
+3. **Execute the Server:**
    ```bash
-   npm start
+   npx ts-node src/server/index.ts "YOUR_API_KEY"
    ```
 
-## 3. First-time Authentication
+## Windows Installation Troubleshooting
 
-When you run the server for the first time, it will automatically open a Google Login page in your default browser.
-Authorize the application. Upon success, a `tokens.json` file will be generated locally so you don't continually need to authenticate.
+When executing global installations (`npm i -g @mrsknetwork/ytmcp`) on Windows architectures, the following mitigations apply to common errors:
 
-*Note: The authorization server spins up a small local express app strictly on `127.0.0.1:3000` to capture the callback securely.*
+1. **File Locking Constraints (`EPERM`):** Ensure all consuming agents (e.g., Claude Desktop) are completely exited before executing an upgrade. Active server instances will lock dependency files.
+2. **Post-Installation Hooks (`bin-version-check`):** If the `yt-dlp-exec` Python verification framework fails, bypass the check utilizing environment variables:
+   ```powershell
+   $env:YTDLP_SKIP_PYTHON_CHECK="true"; npm i -g @mrsknetwork/ytmcp
+   ```
+3. **Privilege Escalation:** Execute the installation terminal instance with Administrator privileges to ensure correct global path resolution.
 
 ## License
 
-ISC
+Licensed under the [MIT License](LICENSE).
