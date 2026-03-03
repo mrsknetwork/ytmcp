@@ -1,6 +1,6 @@
 {
   "name": "@mrsknetwork/ytmcp",
-  "version": "1.0.0",
+  "version": "1.0.7",
   "description": "YouTube MCP Server",
   "main": "build/server/index.js",
   "mcpName": "io.github.mrsknetwork/ytmcp",
