@@ -3,18 +3,18 @@
     "name": "io.github.mrsknetwork/ytmcp",
     "title": "YouTube MCP",
     "description": "Interact with public YouTube data via the official Data API v3",
-    "version": "1.0.3",
+    "version": "1.0.7",
     "websiteUrl": "https://github.com/mrsknetwork/ytmcp",
     "repository": {
         "source": "github",
         "url": "https://github.com/mrsknetwork/ytmcp.git"
     },
-    "license": "ISC",
+    "license": "MIT",
     "packages": [
         {
             "registryType": "npm",
             "identifier": "@mrsknetwork/ytmcp",
-            "version": "1.0.3",
+            "version": "1.0.7",
             "transport": {
                 "type": "stdio"
             }
