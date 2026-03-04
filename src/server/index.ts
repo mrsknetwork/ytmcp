@@ -9,12 +9,11 @@ import {
     McpError,
 } from "@modelcontextprotocol/sdk/types.js";
 import { google } from "googleapis";
-import { authorize } from "./auth.js";
+import { authorize, revokeToken } from "./auth.js";
 import dotenv from "dotenv";
 import ytDlp from "yt-dlp-exec";
 
-
-if (!process.env.GOOGLE_CLIENT_ID) {
+if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
     dotenv.config();
 }
 
@@ -30,17 +29,35 @@ function parseNumber(val: unknown): number | undefined {
 
 let youtubeInstance: any = null;
 let authPromise: Promise<any> | null = null;
+let currentAuthType: 'apiKey' | 'oauth' | 'guest' | null = null;
 
-async function getYoutubeClient() {
+async function getYoutubeClient(apiKey?: string) {
     if (youtubeInstance) return youtubeInstance;
     if (!authPromise) {
-        authPromise = authorize()
-            .then((authClient) => {
-                console.error("Successfully authorized with Google.");
-                youtubeInstance = google.youtube({
-                    version: "v3",
-                    auth: authClient,
-                });
+        authPromise = authorize(apiKey)
+            .then((authResult) => {
+                currentAuthType = authResult.type;
+
+                if (authResult.type === 'apiKey') {
+                    console.error("Authenticated using Google API Key.");
+                    youtubeInstance = google.youtube({
+                        version: "v3",
+                        auth: authResult.key,
+                    });
+                } else if (authResult.type === 'oauth') {
+                    console.error("Authenticated using OAuth2.");
+                    youtubeInstance = google.youtube({
+                        version: "v3",
+                        auth: authResult.client,
+                    });
+                } else {
+                    console.error("Starting in Guest Mode (No credentials found).");
+                    // We still initialize the client, but it will fail on most calls.
+                    // We will handle this in the tool execution.
+                    youtubeInstance = google.youtube({
+                        version: "v3",
+                    });
+                }
                 return youtubeInstance;
             })
             .catch((err) => {
@@ -52,6 +69,8 @@ async function getYoutubeClient() {
 }
 
 async function runServer() {
+    // Note: NEVER use console.log here, it breaks the MCP protocol.
+    // Use console.error for all status messages.
     console.error("Starting YouTube MCP Server...");
 
     const server = new Server(
@@ -169,6 +188,14 @@ async function runServer() {
                     },
                 },
                 {
+                    name: "revoke_authentication",
+                    description: "Revoke all stored YouTube authentication tokens and sign out.",
+                    inputSchema: {
+                        type: "object",
+                        properties: {},
+                    },
+                },
+                {
                     name: "get_comment_threads",
                     description: "Get top-level comment threads for a video or channel.",
                     inputSchema: {
@@ -282,7 +309,71 @@ async function runServer() {
         const commonPart = ["snippet", "id"];
 
         try {
-            const youtube = await getYoutubeClient();
+            // Priority: revoke_authentication should run even without a client
+            if (name === "revoke_authentication") {
+                await revokeToken();
+                youtubeInstance = null;
+                authPromise = null;
+                currentAuthType = null;
+                return { content: [{ type: "text", text: "Successfully revoked tokens and signed out." }] };
+            }
+
+            // Priority: download_video_caption is a scraper tool, it works even in guest mode.
+            if (name === "download_video_caption") {
+                if (!args || !isString(args.video_id)) throw new Error("Missing video_id");
+                try {
+                    const output: any = await ytDlp(`https://www.youtube.com/watch?v=${args.video_id}`, {
+                        dumpJson: true,
+                        skipDownload: true,
+                    });
+
+                    const autoSubs = output.automatic_captions || {};
+                    const subs = output.subtitles || {};
+
+                    // Try to find English captions
+                    let captionsList = subs['en'] || autoSubs['en'] || subs['en-US'] || autoSubs['en-US'];
+
+                    if (!captionsList) {
+                        const availableLangs = [...Object.keys(subs), ...Object.keys(autoSubs)];
+                        if (availableLangs.length === 0) return { content: [{ type: "text", text: "No captions found." }] };
+                        captionsList = subs[availableLangs[0]] || autoSubs[availableLangs[0]];
+                    }
+
+                    const track = captionsList.find((c: any) => c.ext === 'vtt') || captionsList[0];
+                    if (!track?.url) return { content: [{ type: "text", text: "No valid caption track URL found." }] };
+
+                    const res = await fetch(track.url);
+                    const vtt = await res.text();
+
+                    // Simple VTT to Text cleaner
+                    const cleanText = vtt
+                        .replace(/^WEBVTT.*?(\r?\n\r?\n)/s, '')
+                        .replace(/^\d{2}:\d{2}:\d{2}\.\d{3} --> \d{2}:\d{2}:\d{2}\.\d{3}.*?\r?\n/gm, '')
+                        .replace(/<[^>]+>/g, '')
+                        .split('\n')
+                        .map(l => l.trim())
+                        .filter(l => l.length > 0)
+                        .join(' ');
+
+                    return { content: [{ type: "text", text: cleanText }] };
+                } catch (e: any) {
+                    return { content: [{ type: "text", text: `Error fetching transcript via yt-dlp: ${e.message}` }], isError: true };
+                }
+            }
+
+            // For all other tools, we MUST have a valid client.
+            const youtube = await getYoutubeClient(process.argv[2]);
+
+            // If we are in Guest Mode, and the tool is NOT download_video_caption, block it.
+            if (currentAuthType === 'guest') {
+                return {
+                    content: [{
+                        type: "text",
+                        text: "Error: No authentication credentials found (Guest Mode). To use this tool, please provide a GOOGLE_API_KEY or set up OAuth2 Client ID/Secret."
+                    }],
+                    isError: true,
+                };
+            }
 
             switch (name) {
                 case "search_youtube_content": {
@@ -420,64 +511,8 @@ async function runServer() {
                 }
 
                 case "download_video_caption": {
-                    if (!args || !isString(args.video_id)) throw new Error("Missing video_id");
-                    try {
-                        const output: any = await ytDlp(`https://www.youtube.com/watch?v=${args.video_id}`, {
-                            dumpJson: true,
-                            skipDownload: true,
-                        });
-
-                        const subs = output.subtitles || {};
-                        const autoSubs = output.automatic_captions || {};
-
-                        // Try to find English captions first, then fallback to any available
-                        let targetLanguage = 'en';
-                        let captionsList = subs[targetLanguage] || autoSubs[targetLanguage] || subs['en-US'] || autoSubs['en-US'];
-
-                        if (!captionsList) {
-                            const availableLangs = [...Object.keys(subs), ...Object.keys(autoSubs)];
-                            if (availableLangs.length === 0) {
-                                return { content: [{ type: "text", text: "No captions available for this video." }] };
-                            }
-                            targetLanguage = availableLangs[0];
-                            captionsList = subs[targetLanguage] || autoSubs[targetLanguage];
-                        }
-
-                        // Prefer VTT format, fallback to the first available format
-                        const captionTrack = captionsList.find((c: any) => c.ext === 'vtt') || captionsList[0];
-                        if (!captionTrack || !captionTrack.url) {
-                            return { content: [{ type: "text", text: "Caption track URL not found in metadata." }] };
-                        }
-
-                        // Fetch the caption text
-                        const captionRes = await fetch(captionTrack.url);
-                        if (!captionRes.ok) {
-                            return { content: [{ type: "text", text: `Failed to download caption: ${captionRes.statusText}` }], isError: true };
-                        }
-
-                        const text = await captionRes.text();
-                        let parsedText = text;
-
-                        if (captionTrack.ext === 'vtt' || text.includes('WEBVTT')) {
-                            const cleaned = text
-                                .replace(/^WEBVTT.*?(\r?\n\r?\n)/s, '')
-                                .replace(/^\d{2}:\d{2}:\d{2}\.\d{3} --> \d{2}:\d{2}:\d{2}\.\d{3}.*?\r?\n/gm, '')
-                                .replace(/<[^>]+>/g, '');
-
-                            const lines = cleaned.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-                            const resLines: string[] = [];
-                            for (const l of lines) {
-                                if (resLines.length === 0 || resLines[resLines.length - 1] !== l) {
-                                    resLines.push(l);
-                                }
-                            }
-                            parsedText = resLines.join(' ');
-                        }
-
-                        return { content: [{ type: "text", text: parsedText }] };
-                    } catch (e: any) {
-                        return { content: [{ type: "text", text: `Error fetching transcript via yt-dlp: ${e.message}` }], isError: true };
-                    }
+                    // Logic moved up to handle guest mode priority
+                    throw new Error("This tool should have been handled by the guest mode skip.");
                 }
 
 
@@ -561,7 +596,7 @@ async function runServer() {
 
     const transport = new StdioServerTransport();
     await server.connect(transport);
-    console.error("YouTube MCP Server is running and listening on stdio.");
+    // Removed the message to stdout/stderr that might be causing issues during init
 }
 
 runServer().catch((error) => {

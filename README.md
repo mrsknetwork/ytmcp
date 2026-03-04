@@ -100,7 +100,7 @@ To compile and execute the server directly from source:
    ```
 3. **Execute the Server:**
    ```bash
-   npx ts-node src/server/index.ts "YOUR_API_KEY"
+   npm start
    ```
 
 ## 3. Usage with Docker
@@ -156,16 +156,10 @@ config:
 
 ## 4. First-time Authentication
 
-## 5. Windows Installation Troubleshooting
+When you run the server for the first time, it will automatically open a Google Login page in your default browser.
+Authorize the application. Upon success, a `tokens.json` file will be generated locally so you don't continually need to authenticate.
 
-When executing global installations (`npm i -g @mrsknetwork/ytmcp`) on Windows architectures, the following mitigations apply to common errors:
-
-1. **File Locking Constraints (`EPERM`):** Ensure all consuming agents (e.g., Claude Desktop) are completely exited before executing an upgrade. Active server instances will lock dependency files.
-2. **Post-Installation Hooks (`bin-version-check`):** If the `yt-dlp-exec` Python verification framework fails, bypass the check utilizing environment variables:
-   ```powershell
-   $env:YTDLP_SKIP_PYTHON_CHECK="true"; npm i -g @mrsknetwork/ytmcp
-   ```
-3. **Privilege Escalation:** Execute the installation terminal instance with Administrator privileges to ensure correct global path resolution.
+*Note: The authorization server spins up a small local express app strictly on `127.0.0.1:3000` to capture the callback securely.*
 
 ## License
 

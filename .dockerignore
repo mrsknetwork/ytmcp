@@ -6,7 +6,5 @@ dist
 .env
 tokens.json
 mcp-publisher
-.agents/
-.agent
 package-lock.json
 npm-debug.log

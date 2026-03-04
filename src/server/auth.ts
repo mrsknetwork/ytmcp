@@ -4,6 +4,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import crypto from 'crypto';
 import os from 'os';
+import { McpError, ErrorCode } from "@modelcontextprotocol/sdk/types.js";
 
 const SCOPES = [
     'https://www.googleapis.com/auth/youtube.readonly',
@@ -26,12 +27,24 @@ async function secureTokenFile() {
 let activeAuthServer: any = null;
 let pendingAuthUrl: string = '';
 
-export async function authorize(): Promise<any> {
+export async function authorize(apiKey?: string): Promise<any> {
+    // Priority 1: CLI-provided API Key
+    if (apiKey) {
+        return { type: 'apiKey', key: apiKey };
+    }
+
+    // Priority 2: Environment-provided API Key
+    if (process.env.GOOGLE_API_KEY) {
+        return { type: 'apiKey', key: process.env.GOOGLE_API_KEY };
+    }
+
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
 
     if (!clientId || !clientSecret) {
-        throw new Error('Missing GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET environment variables. These are strictly required for secure authentication.');
+        // Worst Scenario: No credentials found. 
+        // We return a "guest" indicator instead of throwing, so the server can still start.
+        return { type: 'guest' };
     }
 
     const oauth2Client = new google.auth.OAuth2(
@@ -60,14 +73,49 @@ export async function authorize(): Promise<any> {
             }
         });
 
-        return oauth2Client;
+        return { type: 'oauth', client: oauth2Client };
     } catch (err) {
         startAuthServer(oauth2Client);
 
         // Return a specific crafted prompt instructing the LLM to ask the user nicely
-        throw new Error(
+        throw new McpError(
+            ErrorCode.InvalidRequest,
             `Authentication Required. Please politely tell the user: "To use YouTube MCP, you need to authenticate with your Google account." \n\nProvide them this exact markdown link so they can click it explicitly: [Open Authentication](${pendingAuthUrl}) \n\nInstruct them to tell you when they are finished logging in so you can retry the tool call. If they wish to Deny, cancel the operation.`
         );
+    }
+}
+
+export async function revokeToken(): Promise<void> {
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+
+    if (!clientId || !clientSecret) {
+        throw new Error('OAuth2 credentials missing. Cannot revoke token.');
+    }
+
+    const oauth2Client = new google.auth.OAuth2(
+        clientId,
+        clientSecret,
+        'http://localhost:3000/oauth2callback'
+    );
+
+    try {
+        const tokenData = await fs.readFile(TOKEN_PATH, 'utf-8');
+        const tokens = JSON.parse(tokenData);
+
+        if (tokens.access_token || tokens.refresh_token) {
+            await oauth2Client.revokeToken(tokens.access_token || tokens.refresh_token);
+        }
+
+        await fs.unlink(TOKEN_PATH);
+        console.error('Tokens revoked and local storage cleared.');
+    } catch (err: any) {
+        if (err.code === 'ENOENT') {
+            console.error('No token file found to revoke.');
+        } else {
+            console.error('Error during token revocation:', err.message);
+            throw err;
+        }
     }
 }
 
@@ -91,7 +139,8 @@ function startAuthServer(oauth2Client: any) {
         access_type: 'offline',
         scope: SCOPES,
         state: stateToken,
-        prompt: 'consent'
+        prompt: 'consent',
+        include_granted_scopes: true // Best Practice: Incremental Authorization
     });
 
     app.get('/oauth2callback', async (req, res) => {
@@ -136,4 +185,13 @@ function startAuthServer(oauth2Client: any) {
     activeAuthServer = app.listen(3000, '127.0.0.1', () => {
         console.error('Background Auth Server listening silently for callbacks...');
     });
+
+    // Best Practice: Implement a timeout for the temporary server
+    setTimeout(() => {
+        if (activeAuthServer) {
+            console.error('Auth server timed out after 15 minutes. Closing...');
+            activeAuthServer.close();
+            activeAuthServer = null;
+        }
+    }, 15 * 60 * 1000);
 }
