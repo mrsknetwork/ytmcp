@@ -10,3 +10,4 @@ dist/
 .env
 tokens.json
 mcp-publisher
+.agents/

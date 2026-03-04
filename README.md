@@ -100,8 +100,9 @@ To compile and execute the server directly from source:
    ```
 3. **Execute the Server:**
    ```bash
-   npm start
+   node build/server/index.js "YOUR_API_KEY"
    ```
+   *Note: For local development, you can use `npm run build && node build/server/index.js`.*
 
 ## 3. Usage with Docker
 

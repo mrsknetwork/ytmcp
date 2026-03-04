@@ -11,10 +11,9 @@ const SCOPES = [
     'https://www.googleapis.com/auth/youtube.force-ssl'
 ];
 
-
 const TOKEN_PATH = path.join(os.homedir(), '.ytmcp_tokens.json');
 
-async function secureTokenFile() {
+async function secureTokenFile(): Promise<void> {
     try {
         const stats = await fs.stat(TOKEN_PATH);
         if (stats) {
@@ -27,7 +26,7 @@ async function secureTokenFile() {
 let activeAuthServer: any = null;
 let pendingAuthUrl: string = '';
 
-export async function authorize(apiKey?: string): Promise<any> {
+export async function authorize(apiKey?: string): Promise<{ type: string, key?: string, client?: any }> {
     // Priority 1: CLI-provided API Key
     if (apiKey) {
         return { type: 'apiKey', key: apiKey };
@@ -47,7 +46,7 @@ export async function authorize(apiKey?: string): Promise<any> {
         return { type: 'guest' };
     }
 
-    const oauth2Client = new google.auth.OAuth2(
+    const oauth2Client: any = new google.auth.OAuth2(
         clientId,
         clientSecret,
         'http://localhost:3000/oauth2callback'
@@ -59,7 +58,7 @@ export async function authorize(apiKey?: string): Promise<any> {
         oauth2Client.setCredentials(JSON.parse(token));
 
         // Setup an event listener to automatically save refreshed tokens
-        oauth2Client.on('tokens', async (tokens) => {
+        oauth2Client.on('tokens', async (tokens: any) => {
             try {
                 // Merge new tokens with any existing ones (so we don't lose the refresh_token)
                 const currentTokenData = await fs.readFile(TOKEN_PATH, 'utf-8').catch(() => '{}');
@@ -74,7 +73,7 @@ export async function authorize(apiKey?: string): Promise<any> {
         });
 
         return { type: 'oauth', client: oauth2Client };
-    } catch (err) {
+    } catch (err: any) {
         startAuthServer(oauth2Client);
 
         // Return a specific crafted prompt instructing the LLM to ask the user nicely
@@ -93,7 +92,7 @@ export async function revokeToken(): Promise<void> {
         throw new Error('OAuth2 credentials missing. Cannot revoke token.');
     }
 
-    const oauth2Client = new google.auth.OAuth2(
+    const oauth2Client: any = new google.auth.OAuth2(
         clientId,
         clientSecret,
         'http://localhost:3000/oauth2callback'
@@ -119,13 +118,13 @@ export async function revokeToken(): Promise<void> {
     }
 }
 
-function startAuthServer(oauth2Client: any) {
+function startAuthServer(oauth2Client: any): void {
     if (activeAuthServer) return; // Prevent spawning multiple listeners
 
-    const app = express();
+    const app: any = express();
 
     // Security Best Practice: Implement Anti-IFrame Headers
-    app.use((req, res, next) => {
+    app.use((req: any, res: any, next: any) => {
         res.setHeader('X-Frame-Options', 'DENY');
         res.setHeader('Content-Security-Policy', "frame-ancestors 'none'");
         next();
@@ -143,7 +142,7 @@ function startAuthServer(oauth2Client: any) {
         include_granted_scopes: true // Best Practice: Incremental Authorization
     });
 
-    app.get('/oauth2callback', async (req, res) => {
+    app.get('/oauth2callback', async (req: any, res: any) => {
         // Security Best Practice: Validate state parameter to prevent CSRF / Confused Deputy attacks
         const returnedState = req.query.state as string;
         if (returnedState !== stateToken) {
@@ -171,7 +170,7 @@ function startAuthServer(oauth2Client: any) {
             await secureTokenFile();
             console.error('Token stored securely to', TOKEN_PATH);
             res.send('<html><body style="font-family: sans-serif; padding: 2rem;"><h2>Authentication successful!</h2><p>You can close this tab and return to Claude to continue your request.</p></body></html>');
-        } catch (err) {
+        } catch (err: any) {
             console.error('Error retrieving access token', err);
             res.status(500).send('Authentication Failed. Check Server Logs.');
         } finally {
