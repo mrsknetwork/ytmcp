@@ -9,4 +9,4 @@ dist/
 # Secrets
 .env
 tokens.json
-
+mcp-publisher
