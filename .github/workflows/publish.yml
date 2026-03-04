@@ -2,8 +2,7 @@ name: Multi-Registry Publish
 
 on:
   push:
-    tags: ["v*"] # Trigger on v1.0.7, etc.
-
+    tags: ["v*"] 
 jobs:
   publish-npm:
     name: Publish to NPM
