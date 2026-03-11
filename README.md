@@ -20,7 +20,6 @@ Once connected, your AI can:
 - Extract clean, word-for-word video transcripts - **no credentials required**.
 - Search YouTube for videos, channels, and playlists.
 - Retrieve video stats, metadata, comments, and captions.
-- Access private data like subscriptions and memberships (with OAuth).
 
 ---
 
