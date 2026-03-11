@@ -2,17 +2,13 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { authorize, revokeToken } from "./auth.js";
-import dotenv from "dotenv";
+import { authorize } from "./auth.js";
 import ytDlp from "yt-dlp-exec";
 import { z } from "zod";
 
-// Ensure no library, including dotenv or yt-dlp, accidentally logs to stdout and breaks MCP protocol
+// Ensure no library accidentally logs to stdout and breaks MCP protocol
 console.log = console.error;
 
-if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
-    dotenv.config();
-}
 
 let authPromise: Promise<any> | null = null;
 let currentAuthType: string | null = null;
@@ -208,14 +204,14 @@ const GetSubscriptionsListSchema = z.object({
     max_results: z.number().optional().describe("Default 5"),
 });
 
-const RevokeAuthenticationSchema = z.object({});
+
 
 // ----------------------------------------------------------------------
 // Tool Registrations
 // ----------------------------------------------------------------------
 
 (server as any).registerTool(
-    "search_youtube_content",
+    "search_content",
     {
         description: "Search for videos, channels, or playlists on YouTube.",
         inputSchema: SearchYoutubeContentSchema
@@ -235,7 +231,7 @@ const RevokeAuthenticationSchema = z.object({});
 );
 
 (server as any).registerTool(
-    "get_video_details",
+    "get_video_metadata",
     {
         description: "Get metadata for specific videos by ID, or get the most popular videos.",
         inputSchema: GetVideoDetailsSchema
@@ -262,7 +258,7 @@ const RevokeAuthenticationSchema = z.object({});
 );
 
 (server as any).registerTool(
-    "get_channel_details",
+    "get_channel_metadata",
     {
         description: "Get channel information by ID or username.",
         inputSchema: GetChannelDetailsSchema
@@ -288,7 +284,7 @@ const RevokeAuthenticationSchema = z.object({});
 );
 
 (server as any).registerTool(
-    "get_video_categories",
+    "list_video_categories",
     {
         description: "Get standard video categories.",
         inputSchema: GetVideoCategoriesSchema
@@ -307,7 +303,7 @@ const RevokeAuthenticationSchema = z.object({});
 );
 
 (server as any).registerTool(
-    "get_supported_languages",
+    "list_supported_languages",
     {
         description: "Get supported languages on YouTube.",
         inputSchema: GetSupportedLanguagesSchema
@@ -326,7 +322,7 @@ const RevokeAuthenticationSchema = z.object({});
 );
 
 (server as any).registerTool(
-    "get_supported_regions",
+    "list_supported_regions",
     {
         description: "Get supported regions on YouTube.",
         inputSchema: GetSupportedRegionsSchema
@@ -345,7 +341,7 @@ const RevokeAuthenticationSchema = z.object({});
 );
 
 (server as any).registerTool(
-    "get_playlists",
+    "list_playlists",
     {
         description: "Get user or channel playlists.",
         inputSchema: GetPlaylistsSchema
@@ -371,7 +367,7 @@ const RevokeAuthenticationSchema = z.object({});
 );
 
 (server as any).registerTool(
-    "get_playlist_items",
+    "list_playlist_items",
     {
         description: "Get items within a playlist.",
         inputSchema: GetPlaylistItemsSchema
@@ -391,7 +387,7 @@ const RevokeAuthenticationSchema = z.object({});
 );
 
 (server as any).registerTool(
-    "get_comment_threads",
+    "list_video_comments",
     {
         description: "Get top-level comment threads for a video or channel.",
         inputSchema: GetCommentThreadsSchema
@@ -418,7 +414,7 @@ const RevokeAuthenticationSchema = z.object({});
 );
 
 (server as any).registerTool(
-    "get_comments_replies",
+    "list_comment_replies",
     {
         description: "Get specific comments by ID or parent ID (replies).",
         inputSchema: GetCommentsRepliesSchema
@@ -444,7 +440,7 @@ const RevokeAuthenticationSchema = z.object({});
 );
 
 (server as any).registerTool(
-    "get_video_captions_metadata",
+    "list_video_captions",
     {
         description: "Get caption tracks metadata for a video.",
         inputSchema: GetVideoCaptionsMetadataSchema
@@ -463,7 +459,7 @@ const RevokeAuthenticationSchema = z.object({});
 );
 
 (server as any).registerTool(
-    "download_video_caption",
+    "get_video_transcript",
     {
         description: "Download the transcript/caption text of a YouTube video using yt-dlp (bypasses API restrictions).",
         inputSchema: DownloadVideoCaptionSchema
@@ -485,21 +481,70 @@ const RevokeAuthenticationSchema = z.object({});
                 if (availableLangs.length === 0) return formatError("No captions found.");
                 captionsList = subs[availableLangs[0]] || autoSubs[availableLangs[0]];
             }
+            const json3Track = captionsList.find((c: any) => c.ext === 'json3');
+            if (json3Track?.url) {
+                const res = await fetch(json3Track.url);
+                const json3 = await res.json() as any;
+                const events = json3.events || [];
 
-            const track = captionsList.find((c: any) => c.ext === 'vtt') || captionsList[0];
-            if (!track?.url) return formatError("No valid caption track URL found.");
+                const segments: string[] = [];
+                for (const event of events) {
+                    if (!event.segs) continue;
+                    const text = event.segs
+                        .map((seg: any) => seg.utf8 || '')
+                        .join('')
+                        .trim();
+                    if (text && !/^\[.*\]$/.test(text)) {
+                        segments.push(text);
+                    }
+                }
 
-            const res = await fetch(track.url);
+                const cleanText = segments
+                    .join(' ')
+                    .replace(/[\u266A\u266B\u266C\u266D\u266E\u266F]/g, '')
+                    .replace(/\s+/g, ' ')
+                    .trim();
+
+                if (cleanText.length > 0) return success(cleanText);
+            }
+
+            const vttTrack = captionsList.find((c: any) => c.ext === 'vtt') || captionsList[0];
+            if (!vttTrack?.url) return formatError("No valid caption track URL found.");
+
+            const res = await fetch(vttTrack.url);
             const vtt = await res.text();
 
-            const cleanText = vtt
+            const cueBlocks = vtt
                 .replace(/^WEBVTT.*?(\r?\n\r?\n)/s, '')
-                .replace(/^\d{2}:\d{2}:\d{2}\.\d{3} --> \d{2}:\d{2}:\d{2}\.\d{3}.*?\r?\n/gm, '')
-                .replace(/<[^>]+>/g, '')
-                .split('\n')
-                .map(l => l.trim())
-                .filter(l => l.length > 0)
-                .join(' ');
+                .split(/\n\n+/)
+                .filter(block => block.trim().length > 0);
+
+            const extractedLines: string[] = [];
+            for (const block of cueBlocks) {
+                const lines = block.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+
+                const textLines = lines.filter(l => !/^\d{2}:\d{2}/.test(l));
+                if (textLines.length === 0) continue;
+
+                let lastLine = textLines[textLines.length - 1];
+                lastLine = lastLine
+                    .replace(/<\d{2}:\d{2}:\d{2}\.\d{3}>/g, '')
+                    .replace(/<\/?c>/g, '')
+                    .replace(/<[^>]+>/g, '')
+                    .trim();
+
+                if (!lastLine || /^\[.*\]$/.test(lastLine)) continue;
+
+                if (extractedLines.length > 0 && extractedLines[extractedLines.length - 1] === lastLine) continue;
+
+                extractedLines.push(lastLine);
+            }
+
+            const cleanText = extractedLines
+                .join(' ')
+                .replace(/[\u266A\u266B\u266C\u266D\u266E\u266F]/g, '')
+                .replace(/\s+/g, ' ')
+                .trim();
 
             return success(cleanText);
         } catch (error) {
@@ -509,7 +554,7 @@ const RevokeAuthenticationSchema = z.object({});
 );
 
 (server as any).registerTool(
-    "get_activities_list",
+    "list_channel_activities",
     {
         description: "Get a list of channel activities (e.g., uploads, likes).",
         inputSchema: GetActivitiesListSchema
@@ -535,7 +580,7 @@ const RevokeAuthenticationSchema = z.object({});
 );
 
 (server as any).registerTool(
-    "get_channel_sections",
+    "list_channel_sections",
     {
         description: "Get the channel sections/shelves for a channel.",
         inputSchema: GetChannelSectionsSchema
@@ -560,7 +605,7 @@ const RevokeAuthenticationSchema = z.object({});
 );
 
 (server as any).registerTool(
-    "get_members_list",
+    "list_channel_members",
     {
         description: "Get members for the authenticated user's channel. (May require specific memberships scope & monetization enabled).",
         inputSchema: GetMembersListSchema
@@ -579,7 +624,7 @@ const RevokeAuthenticationSchema = z.object({});
 );
 
 (server as any).registerTool(
-    "get_memberships_levels",
+    "list_membership_levels",
     {
         description: "Get pricing levels for the authenticated user's channel. (May require specific memberships scope).",
         inputSchema: GetMembershipsLevelsSchema
@@ -597,7 +642,7 @@ const RevokeAuthenticationSchema = z.object({});
 );
 
 (server as any).registerTool(
-    "get_subscriptions_list",
+    "list_subscriptions",
     {
         description: "Get a list of subscriptions for a user or channel.",
         inputSchema: GetSubscriptionsListSchema
@@ -623,24 +668,7 @@ const RevokeAuthenticationSchema = z.object({});
     }
 );
 
-(server as any).registerTool(
-    "revoke_authentication",
-    {
-        description: "Revoke all stored YouTube authentication tokens and sign out.",
-        inputSchema: RevokeAuthenticationSchema
-    },
-    async () => {
-        try {
-            await revokeToken();
-            authPromise = null;
-            currentAuthType = null;
-            currentCredentials = null;
-            return success("Successfully revoked tokens and signed out.");
-        } catch (error) {
-            return formatError(error);
-        }
-    }
-);
+
 
 async function runServer() {
     console.error("Starting YouTube MCP Server...");

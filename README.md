@@ -95,24 +95,23 @@ On your first tool call, the AI will share a login link. Click it, authorize the
 
 | Tool | Auth Required | Description |
 |------|--------------|-------------|
-| `download_video_caption` | None | Extract a full video transcript via `yt-dlp`. |
-| `search_youtube_content` | API Key / OAuth | Search for videos, channels, or playlists. |
-| `get_video_details` | API Key / OAuth | Fetch metadata and stats for specific videos. |
-| `get_channel_details` | API Key / OAuth | Fetch channel profile and subscriber info. |
-| `get_playlists` | API Key / OAuth | Retrieve playlists for a channel. |
-| `get_playlist_items` | API Key / OAuth | List videos inside a playlist. |
-| `get_comment_threads` | API Key / OAuth | Get top-level comments for a video or channel. |
-| `get_comments_replies` | API Key / OAuth | Get replies to a specific comment. |
-| `get_video_captions_metadata` | API Key / OAuth | List available caption tracks for a video. |
-| `get_video_categories` | API Key / OAuth | List YouTube video categories by region. |
-| `get_supported_languages` | API Key / OAuth | List languages supported by YouTube. |
-| `get_supported_regions` | API Key / OAuth | List regions supported by YouTube. |
-| `get_activities_list` | API Key / OAuth | Get recent activity for a channel. |
-| `get_channel_sections` | API Key / OAuth | Get the sections on a channel page. |
-| `get_subscriptions_list` | OAuth only | List subscriptions for a channel or your account. |
-| `get_members_list` | OAuth only | List members of your channel. |
-| `get_memberships_levels` | OAuth only | List membership tiers for your channel. |
-| `revoke_authentication` | OAuth only | Sign out and delete stored tokens. |
+| `get_video_transcript` | None | Extract a full video transcript via `yt-dlp`. |
+| `search_content` | API Key / OAuth | Search for videos, channels, or playlists. |
+| `get_video_metadata` | API Key / OAuth | Fetch metadata and stats for specific videos. |
+| `get_channel_metadata` | API Key / OAuth | Fetch channel profile and subscriber info. |
+| `list_playlists` | API Key / OAuth | Retrieve playlists for a channel. |
+| `list_playlist_items` | API Key / OAuth | List videos inside a playlist. |
+| `list_video_comments` | API Key / OAuth | Get top-level comments for a video or channel. |
+| `list_comment_replies` | API Key / OAuth | Get replies to a specific comment. |
+| `list_video_captions` | API Key / OAuth | List available caption tracks for a video. |
+| `list_video_categories` | API Key / OAuth | List YouTube video categories by region. |
+| `list_supported_languages` | API Key / OAuth | List languages supported by YouTube. |
+| `list_supported_regions` | API Key / OAuth | List regions supported by YouTube. |
+| `list_channel_activities` | API Key / OAuth | Get recent activity for a channel. |
+| `list_channel_sections` | API Key / OAuth | Get the sections on a channel page. |
+| `list_subscriptions` | OAuth only | List subscriptions for a channel or your account. |
+| `list_channel_members` | OAuth only | List members of your channel. |
+| `list_membership_levels` | OAuth only | List membership tiers for your channel. |
 
 ---
 

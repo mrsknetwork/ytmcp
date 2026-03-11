@@ -7,9 +7,12 @@ async function runClient() {
 
     const serverPath = path.resolve(__dirname, "../../build/server/index.js");
 
+    // Forward CLI arguments (e.g., API key) to the server process
+    const serverArgs = [serverPath, ...process.argv.slice(2)];
+
     const transport = new StdioClientTransport({
         command: "node",
-        args: [serverPath],
+        args: serverArgs,
         env: process.env as Record<string, string>,
     });
 
@@ -28,24 +31,28 @@ async function runClient() {
     console.log("\nAvailable Tools from Server:");
     tools.tools.forEach(t => console.log(`- ${t.name}: ${t.description}`));
 
-    console.log("\nTesting 'youtube_search_list' for 'Model Context Protocol'...");
-    try {
-        const result = await client.callTool({
-            name: "youtube_search_list",
-            arguments: {
-                q: "Claude Skills",
-                maxResults: 10
-            }
-        });
+    // Test: search_content (requires API Key or OAuth)
+    console.log("\nTesting 'search_content' for 'Model Context Protocol'...");
+    const searchResult = await client.callTool({
+        name: "search_content",
+        arguments: {
+            search_query: "Model Context Protocol",
+            max_results: 3
+        }
+    });
+    // @ts-ignore
+    console.log(searchResult.isError ? `Expected Error: ${searchResult.content[0].text}` : "Search OK");
 
-        console.log("Result:");
-        // @ts-ignore
-        console.log(result.content[0].text);
-    } catch (err: any) {
-        console.error("Error calling tool:", err.message);
-    }
+    // Test: get_video_transcript (works in all modes - Guest, API Key, OAuth)
+    console.log("\nTesting 'get_video_transcript' for 'dQw4w9WgXcQ'...");
+    const transcriptResult = await client.callTool({
+        name: "get_video_transcript",
+        arguments: { video_id: "dQw4w9WgXcQ" }
+    });
+    // @ts-ignore
+    const text = transcriptResult.content[0].text;
+    console.log(transcriptResult.isError ? `Error: ${text}` : `Transcript OK (${text.length} chars)`);
 
-    console.log("\nClosing connection...");
     await client.close();
 }
 
