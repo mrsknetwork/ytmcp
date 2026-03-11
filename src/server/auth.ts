@@ -49,7 +49,7 @@ export async function authorize(apiKey?: string): Promise<{ type: string, key?: 
     const oauth2Client: any = new google.auth.OAuth2(
         clientId,
         clientSecret,
-        'http://localhost:3000/oauth2callback'
+        'http://localhost:31415/oauth2callback'
     );
 
     try {
@@ -95,7 +95,7 @@ export async function revokeToken(): Promise<void> {
     const oauth2Client: any = new google.auth.OAuth2(
         clientId,
         clientSecret,
-        'http://localhost:3000/oauth2callback'
+        'http://localhost:31415/oauth2callback'
     );
 
     try {
@@ -132,6 +132,10 @@ function startAuthServer(oauth2Client: any): void {
 
     // Security Best Practice: Generate state for CSRF protection
     const stateToken = crypto.randomBytes(32).toString('hex');
+    
+    // Security Best Practice: Generate PKCE Verifier and Challenge 
+    const codeVerifier = crypto.randomBytes(32).toString('hex');
+    const codeChallenge = crypto.createHash('sha256').update(codeVerifier).digest('base64url');
 
     // Request a refresh token explicitly + prompt consent so it's always granted on new logins
     pendingAuthUrl = oauth2Client.generateAuthUrl({
@@ -139,6 +143,8 @@ function startAuthServer(oauth2Client: any): void {
         scope: SCOPES,
         state: stateToken,
         prompt: 'consent',
+        code_challenge: codeChallenge,
+        code_challenge_method: 'S256',
         include_granted_scopes: true // Best Practice: Incremental Authorization
     });
 
@@ -165,7 +171,10 @@ function startAuthServer(oauth2Client: any): void {
         }
 
         try {
-            const { tokens } = await oauth2Client.getToken(code);
+            const { tokens } = await oauth2Client.getToken({
+                code: code,
+                codeVerifier: codeVerifier
+            });
             await fs.writeFile(TOKEN_PATH, JSON.stringify(tokens));
             await secureTokenFile();
             console.error('Token stored securely to', TOKEN_PATH);
@@ -181,8 +190,8 @@ function startAuthServer(oauth2Client: any): void {
         }
     });
 
-    activeAuthServer = app.listen(3000, '127.0.0.1', () => {
-        console.error('Background Auth Server listening silently for callbacks...');
+    activeAuthServer = app.listen(31415, '127.0.0.1', () => {
+        console.error('Background Auth Server listening silently for callbacks on port 31415...');
     });
 
     // Best Practice: Implement a timeout for the temporary server

@@ -46,7 +46,7 @@ Accessing private data requires OAuth 2.0 configuration.
 2. Create a project and enable the **YouTube Data API v3**.
 3. Navigate to **APIs & Services > Credentials**.
 4. Create an **OAuth 2.0 Client ID** (Application type: "Web application").
-5. Specify the Authorized Redirect URI: `http://localhost:3000/oauth2callback`.
+5. Specify the Authorized Redirect URI: `http://localhost:31415/oauth2callback`.
 
 ### 2. Client Configuration
 Define the credentials within your client's environment variables. The server will detect these variables, prioritize them over the positional API Key argument, and initiate the OAuth2 authorization flow upon the first tool execution.
@@ -109,7 +109,7 @@ To compile and execute the server directly from source:
 When you run the server for the first time, it will automatically open a Google Login page in your default browser.
 Authorize the application. Upon success, a `tokens.json` file will be generated locally so you don't continually need to authenticate.
 
-*Note: The authorization server spins up a small local express app strictly on `127.0.0.1:3000` to capture the callback securely.*
+*Note: The authorization server spins up a small local express app strictly on `127.0.0.1:31415` to capture the callback securely.*
 
 ## License
 
