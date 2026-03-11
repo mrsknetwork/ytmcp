@@ -2,12 +2,13 @@
 
 # YouTube MCP
 
-[![npm version](https://img.shields.io/npm/v/@mrsknetwork/ytmcp.svg?style=flat-square&color=blue)](https://www.npmjs.com/package/@mrsknetwork/ytmcp)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](https://opensource.org/licenses/MIT)
+**Connect AI assistants to YouTube - search, transcripts, metadata, and more.**
+
+[![npm](https://img.shields.io/npm/v/@mrsknetwork/ytmcp?style=flat-square&color=CB3837&logo=npm&logoColor=white)](https://www.npmjs.com/package/@mrsknetwork/ytmcp)
+[![MIT](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](https://opensource.org/licenses/MIT)
+[![MCP](https://img.shields.io/badge/MCP-Compatible-6366F1?style=flat-square)](https://modelcontextprotocol.io)
 
 </div>
-
-**A Model Context Protocol (MCP) server that connects AI assistants to the YouTube Data API v3 - supporting public data access, transcript extraction, and private account features via secure OAuth 2.0.**
 
 ---
 
@@ -15,8 +16,8 @@
 
 Once connected, your AI can:
 
+- Extract clean, word-for-word video transcripts - **no credentials required**.
 - Search YouTube for videos, channels, and playlists.
-- Extract clean, word-for-word video transcripts.
 - Retrieve video stats, metadata, comments, and captions.
 - Access private data like subscriptions and memberships (with OAuth).
 
@@ -24,11 +25,28 @@ Once connected, your AI can:
 
 ## Getting Started
 
-There are two setup paths depending on what you need.
+The server supports three access tiers. Pick the one that fits your use case.
 
-### Option 1 - API Key (Recommended)
+### Guest Mode (No Setup)
 
-Best for public data access and transcript extraction. No login required.
+Works out of the box. The `get_video_transcript` tool uses `yt-dlp` to extract transcripts without any API credentials.
+
+```json
+{
+  "mcpServers": {
+    "youtube-mcp": {
+      "command": "npx",
+      "args": ["-y", "@mrsknetwork/ytmcp@latest"]
+    }
+  }
+}
+```
+
+---
+
+### API Key (Recommended)
+
+Unlocks all public data tools. Best for search, metadata, comments, and transcripts.
 
 **1. Get a Google API Key**
 
@@ -51,7 +69,7 @@ Best for public data access and transcript extraction. No login required.
 
 ---
 
-### Option 2 - OAuth 2.0
+### OAuth 2.0
 
 <details>
 <summary><b>Required for private subscriptions, memberships, and account activity.</b></summary>
@@ -65,8 +83,11 @@ Best for public data access and transcript extraction. No login required.
 3. Go to **Credentials > Create Credentials > OAuth 2.0 Client ID**.
 4. Set Application type to **Web application**.
 5. Add this exact Redirect URI: `http://localhost:31415/oauth2callback`.
+6. Go to **OAuth Consent Screen > Test Users** and add your Gmail address.
 
 **2. Add to your MCP client config**
+
+Credentials are passed securely via environment variables in the MCP config. They are never stored in files.
 
 ```json
 {

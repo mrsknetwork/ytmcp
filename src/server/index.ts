@@ -9,7 +9,6 @@ import { z } from "zod";
 // Ensure no library accidentally logs to stdout and breaks MCP protocol
 console.log = console.error;
 
-
 let authPromise: Promise<any> | null = null;
 let currentAuthType: string | null = null;
 let currentCredentials: any = null;
@@ -39,10 +38,18 @@ async function getCredentials(apiKey?: string) {
     return authPromise;
 }
 
-async function ensureClientValid() {
+async function ensureApiAccess() {
     const creds = await getCredentials(process.argv[2]);
     if (currentAuthType === 'guest') {
-        throw new Error("No authentication credentials found (Guest Mode). To use this tool, please provide a GOOGLE_API_KEY or set up OAuth2 Client ID/Secret.");
+        throw new Error("This tool requires a Google API Key or OAuth credentials. In Guest Mode, only the 'get_video_transcript' tool is available.");
+    }
+    return creds;
+}
+
+async function ensureOAuthAccess() {
+    const creds = await getCredentials(process.argv[2]);
+    if (currentAuthType !== 'oauth') {
+        throw new Error("This tool requires OAuth authentication. Please configure GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in your MCP client config.");
     }
     return creds;
 }
@@ -52,7 +59,7 @@ async function ensureClientValid() {
 // ----------------------------------------------------------------------
 
 async function ytApiRequest(endpoint: string, params: Record<string, string | number | boolean | undefined | string[]>) {
-    const creds = await ensureClientValid();
+    const creds = await ensureApiAccess();
 
     const url = new URL(`https://youtube.googleapis.com/youtube/v3/${endpoint}`);
 
@@ -612,6 +619,7 @@ const GetSubscriptionsListSchema = z.object({
     },
     async (args: any) => {
         try {
+            await ensureOAuthAccess();
             const data = await ytApiRequest("members", {
                 part: "snippet",
                 maxResults: args.max_results || 5,
@@ -631,6 +639,7 @@ const GetSubscriptionsListSchema = z.object({
     },
     async () => {
         try {
+            await ensureOAuthAccess();
             const data = await ytApiRequest("membershipsLevels", {
                 part: "snippet",
             });
@@ -649,6 +658,7 @@ const GetSubscriptionsListSchema = z.object({
     },
     async (args: any) => {
         try {
+            await ensureOAuthAccess();
             const params: any = {
                 part: "snippet,contentDetails",
                 maxResults: args.max_results || 5,
