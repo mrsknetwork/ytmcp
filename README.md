@@ -1,55 +1,72 @@
-# YouTube MCP (@mrsknetwork/ytmcp)
+<div align="center">
 
-[![npm version](https://img.shields.io/npm/v/@mrsknetwork/ytmcp.svg)](https://www.npmjs.com/package/@mrsknetwork/ytmcp)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+# YouTube MCP
 
-A Model Context Protocol (MCP) server that provides AI assistants (including Claude Desktop, Cursor, VS Code, and Antigravity) with tools for interacting with public and private YouTube data.
+[![npm version](https://img.shields.io/npm/v/@mrsknetwork/ytmcp.svg?style=flat-square&color=blue)](https://www.npmjs.com/package/@mrsknetwork/ytmcp)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 
-This server interfaces securely with the official YouTube Data API v3 and supports a tiered authentication system for maximum flexibility and reliability.
+</div>
 
-## Features and Capabilities
+**A Model Context Protocol (MCP) server that connects AI assistants to the YouTube Data API v3 - supporting public data access, transcript extraction, and private account features via secure OAuth 2.0.**
 
-* **Tiered Authentication System:**
-  * **API Key Mode:** Instantly access public data using a provisioned API key.
-  * **OAuth2 Mode:** Access private user data (subscriptions, memberships, playlists) with automatic token refresh and incremental authorization.
-  * **Guest Mode:** The server remains operational without credentials. Scraper-dependent tools, such as `download_video_caption`, function via `yt-dlp` extraction methods.
-* **Security:** Implements protected OAuth callbacks, automated server timeouts, and a built-in `revoke_authentication` tool for secure session termination.
-* **Transcripts:** Extracts clean-text video transcripts directly, bypassing API restrictions via `yt-dlp` integration.
+---
 
-## Installation and Quick Start
+## What can it do?
 
-The recommended initialization method utilizes an existing YouTube Data API Key. This provides access to all public data endpoints (Search, Details, Captions).
+Once connected, your AI can:
 
-Add the following configuration to your MCP client:
+- Search YouTube for videos, channels, and playlists.
+- Extract clean, word-for-word video transcripts.
+- Retrieve video stats, metadata, comments, and captions.
+- Access private data like subscriptions and memberships (with OAuth).
+
+---
+
+## Getting Started
+
+There are two setup paths depending on what you need.
+
+### Option 1 - API Key (Recommended)
+
+Best for public data access and transcript extraction. No login required.
+
+**1. Get a Google API Key**
+
+1. Open the [Google Cloud Console](https://console.cloud.google.com/).
+2. Enable **YouTube Data API v3** for your project.
+3. Go to **Credentials** and create an **API Key**.
+
+**2. Add to your MCP client config**
 
 ```json
 {
   "mcpServers": {
     "youtube-mcp": {
       "command": "npx",
-      "args": [
-        "-y",
-        "@mrsknetwork/ytmcp@latest",
-        "YOUR_GOOGLE_API_KEY"
-      ]
+      "args": ["-y", "@mrsknetwork/ytmcp@latest", "YOUR_GOOGLE_API_KEY"]
     }
   }
 }
 ```
 
-## Advanced Configuration: OAuth 2.0
+---
 
-Accessing private data requires OAuth 2.0 configuration.
+### Option 2 - OAuth 2.0
 
-### 1. Acquire Credentials
-1. Navigate to the [Google Cloud Console](https://console.cloud.google.com/).
-2. Create a project and enable the **YouTube Data API v3**.
-3. Navigate to **APIs & Services > Credentials**.
-4. Create an **OAuth 2.0 Client ID** (Application type: "Web application").
-5. Specify the Authorized Redirect URI: `http://localhost:31415/oauth2callback`.
+<details>
+<summary><b>Required for private subscriptions, memberships, and account activity.</b></summary>
 
-### 2. Client Configuration
-Define the credentials within your client's environment variables. The server will detect these variables, prioritize them over the positional API Key argument, and initiate the OAuth2 authorization flow upon the first tool execution.
+<br/>
+
+**1. Create an OAuth 2.0 Client**
+
+1. Open the [Google Cloud Console](https://console.cloud.google.com/).
+2. Enable **YouTube Data API v3** for your project.
+3. Go to **Credentials > Create Credentials > OAuth 2.0 Client ID**.
+4. Set Application type to **Web application**.
+5. Add this exact Redirect URI: `http://localhost:31415/oauth2callback`.
+
+**2. Add to your MCP client config**
 
 ```json
 {
@@ -58,58 +75,65 @@ Define the credentials within your client's environment variables. The server wi
       "command": "npx",
       "args": ["-y", "@mrsknetwork/ytmcp@latest"],
       "env": {
-        "GOOGLE_CLIENT_ID": "your-google-oauth-client-id",
-        "GOOGLE_CLIENT_SECRET": "your-google-oauth-client-secret"
+        "GOOGLE_CLIENT_ID": "your-client-id.apps.googleusercontent.com",
+        "GOOGLE_CLIENT_SECRET": "your-client-secret"
       }
     }
   }
 }
 ```
 
-*Note: The initial OAuth tool invocation will generate a secure URL requiring explicit browser authorization.*
+**3. First-time login**
 
-## Available Tools Reference
+On your first tool call, the AI will share a login link. Click it, authorize the app in your browser, then tell the AI you are done. Your session is saved - you won't need to log in again unless you revoke access.
 
-| Tool Name | Description | Requires Authentication |
-|-----------|-------------|-------------------------|
-| `download_video_caption` | Extracts clear-text video transcripts via `yt-dlp`. | No (Guest Mode Supported) |
-| `search_youtube_content` | Performs queries for videos, channels, and playlists. | API Key or OAuth |
-| `get_video_details` | Retrieves video statistics, descriptions, and metadata. | API Key or OAuth |
-| `get_channel_details` | Retrieves channel subscriber metrics and profiles. | API Key or OAuth |
-| `get_playlists` | Retrieves user or channel playlists. | API Key or OAuth |
-| `get_playlist_items` | Retrieves the video index within a specified playlist. | API Key or OAuth |
-| `get_comment_threads` | Retrieves top-level comment threads for a video. | API Key or OAuth |
-| `get_comments_replies` | Retrieves specific reply threads to top-level comments. | API Key or OAuth |
-| `get_subscriptions_list` | Retrieves subscription data. | **OAuth Only** |
-| `get_memberships_levels` | Retrieves membership pricing tiers for a channel. | **OAuth Only** |
-| `revoke_authentication` | Terminates the active session and deletes stored tokens. | **OAuth Only** |
+</details>
 
-## Source Installation and Development
+---
 
-To compile and execute the server directly from source:
+## Available Tools
 
-1. **Clone the Repository:**
-   ```bash
-   git clone https://github.com/mrsknetwork/youtube-mcp.git
-   cd youtube-mcp
-   npm install
-   ```
-2. **Compile the TypeScript Source:**
-   ```bash
-   npm run build
-   ```
-3. **Execute the Server:**
-   ```bash
-   node build/server/index.js "YOUR_API_KEY"
-   ```
-   *Note: For local development, you can use `npm run build && node build/server/index.js`.*
+| Tool | Auth Required | Description |
+|------|--------------|-------------|
+| `download_video_caption` | None | Extract a full video transcript via `yt-dlp`. |
+| `search_youtube_content` | API Key / OAuth | Search for videos, channels, or playlists. |
+| `get_video_details` | API Key / OAuth | Fetch metadata and stats for specific videos. |
+| `get_channel_details` | API Key / OAuth | Fetch channel profile and subscriber info. |
+| `get_playlists` | API Key / OAuth | Retrieve playlists for a channel. |
+| `get_playlist_items` | API Key / OAuth | List videos inside a playlist. |
+| `get_comment_threads` | API Key / OAuth | Get top-level comments for a video or channel. |
+| `get_comments_replies` | API Key / OAuth | Get replies to a specific comment. |
+| `get_video_captions_metadata` | API Key / OAuth | List available caption tracks for a video. |
+| `get_video_categories` | API Key / OAuth | List YouTube video categories by region. |
+| `get_supported_languages` | API Key / OAuth | List languages supported by YouTube. |
+| `get_supported_regions` | API Key / OAuth | List regions supported by YouTube. |
+| `get_activities_list` | API Key / OAuth | Get recent activity for a channel. |
+| `get_channel_sections` | API Key / OAuth | Get the sections on a channel page. |
+| `get_subscriptions_list` | OAuth only | List subscriptions for a channel or your account. |
+| `get_members_list` | OAuth only | List members of your channel. |
+| `get_memberships_levels` | OAuth only | List membership tiers for your channel. |
+| `revoke_authentication` | OAuth only | Sign out and delete stored tokens. |
 
-## First-time Authentication
+---
 
-When you run the server for the first time, it will automatically open a Google Login page in your default browser.
-Authorize the application. Upon success, a `tokens.json` file will be generated locally so you don't continually need to authenticate.
+## Building from Source
 
-*Note: The authorization server spins up a small local express app strictly on `127.0.0.1:31415` to capture the callback securely.*
+<details>
+<summary><b>Instructions for running the server locally.</b></summary>
+
+<br/>
+
+```bash
+git clone https://github.com/mrsknetwork/ytmcp.git
+cd ytmcp
+npm install
+npm run build
+node build/server/index.js "YOUR_API_KEY"
+```
+
+</details>
+
+---
 
 ## License
 
