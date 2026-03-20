@@ -5,6 +5,7 @@
 **Connect AI assistants to YouTube - search, transcripts, metadata, and more.**
 
 [![npm](https://img.shields.io/npm/v/@mrsknetwork/ytmcp?style=flat-square&color=CB3837&logo=npm&logoColor=white)](https://www.npmjs.com/package/@mrsknetwork/ytmcp)
+![Downloads]( https://img.shields.io/npm/dw/%40mrsknetwork%2Fytmcp?style=flat)
 [![MIT](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](https://opensource.org/licenses/MIT)
 [![MCP](https://img.shields.io/badge/MCP-Compatible-6366F1?style=flat-square)](https://modelcontextprotocol.io)
 [![Socket Badge](https://badge.socket.dev/npm/package/@mrsknetwork/ytmcp/1.0.9)](https://badge.socket.dev/npm/package/@mrsknetwork/ytmcp/1.0.9)
