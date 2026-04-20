@@ -1,6 +1,6 @@
 {
   "name": "@mrsknetwork/ytmcp",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "YouTube MCP Server",
   "main": "build/server/index.js",
   "mcpName": "io.github.mrsknetwork/ytmcp",
@@ -26,17 +26,17 @@
     "url": "git+https://github.com/mrsknetwork/ytmcp.git"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.27.1",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "express": "^5.2.1",
     "googleapis": "^171.4.0",
     "yt-dlp-exec": "^1.0.2",
-    "zod": "^3.25.76"
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",
-    "@types/node": "^25.3.3",
+    "@types/node": "^25.6.0",
     "shx": "^0.4.0",
     "ts-node": "^10.9.2",
-    "typescript": "^5.9.3"
+    "typescript": "^6.0.3"
   }
 }

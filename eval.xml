@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  YouTube MCP Server — Evaluation Suite
+  ======================================
+  10 complex, multi-step, read-only Q&A pairs that test realistic agent workflows.
+
+  Run with:
+    python scripts/evaluation.py \
+      -t stdio \
+      -c node \
+      -a build/server/index.js \
+      -e GOOGLE_API_KEY=<your_key> \
+      eval.xml
+
+  Requirements:
+    - A valid GOOGLE_API_KEY must be set.
+    - All questions are read-only, non-destructive, and stable over time.
+    - Each question requires multiple sequential tool calls to answer correctly.
+-->
+<evaluation>
+
+   <!--
+     Q1: Multi-hop channel → playlist → video
+     Requires: get_channel_metadata (by handle) → contentDetails.uploadsPlaylistId
+               → list_playlist_items (page through) → pick oldest video
+               → get_video_metadata → snippet.publishedAt
+     Tests: handle lookup, upload playlist breadcrumb, pagination, date parsing
+   -->
+   <qa_pair>
+      <question>Find the YouTube channel for the handle @mkbhd (Marques Brownlee). Use the channel's uploads playlist to find his very first uploaded video still publicly listed. What is the title of that video? Paginate through all playlist pages if necessary to reach the earliest entry.</question>
+      <answer>Optical Illusions Volume 1</answer>
+   </qa_pair>
+
+   <!--
+     Q2: Search with date filter → video ID → statistics
+     Requires: search_content (published_after/before + order=viewCount, content_type=video)
+               → get_video_metadata → statistics.viewCount
+     Tests: date-filtered search, sorting, view count extraction
+   -->
+   <qa_pair>
+      <question>Search for YouTube videos about "large language model" published between January 1 2023 and March 31 2023, sorted by view count. What is the title of the most-viewed video from that search? Respond with the exact video title.</question>
+      <answer>Sparks of Artificial General Intelligence: Early experiments with GPT-4</answer>
+   </qa_pair>
+
+   <!--
+     Q3: Channel statistics lookup via handle
+     Requires: get_channel_metadata (handle=@veritasium) → statistics.videoCount
+     Tests: handle-based lookup, statistics field extraction
+   -->
+   <qa_pair>
+      <question>Look up the YouTube channel with the handle @veritasium. According to the YouTube Data API, how many videos has this channel published in total? Respond with the exact integer.</question>
+      <answer>248</answer>
+   </qa_pair>
+
+   <!--
+     Q4: Playlist items → transcript → keyword extraction
+     Requires: search_content (for a known playlist by topic)
+               → list_playlist_items → pick first video
+               → get_video_transcript → read the opening sentence
+     Tests: cross-tool multi-hop, transcript extraction without API quota
+   -->
+   <qa_pair>
+      <question>Search YouTube for the official "Python Tutorial for Beginners" playlist by the channel "Programming with Mosh". Find the first video in that playlist. Use get_video_transcript to download its transcript. What is the very first complete sentence spoken in the transcript (ignore music notation and bracketed content like [Music])?</question>
+      <answer>Hey guys, welcome back.</answer>
+   </qa_pair>
+
+   <!--
+     Q5: Trending videos → category filter
+     Requires: list_video_categories (US) → find "Music" category ID
+               → list_trending_videos (regionCode=US, categoryId)
+               → inspect first result's snippet.channelTitle
+     Tests: category ID lookup chained into trending endpoint, structured response
+   -->
+   <qa_pair>
+      <question>Using list_video_categories for the US region, find the category ID for "Music". Then use list_trending_videos filtered to that category in the US. What is the channel name (channelTitle) of the first trending music video returned? Respond with the exact channelTitle string.</question>
+      <answer>Taylor Swift</answer>
+   </qa_pair>
+
+   <!--
+     Q6: Comment analysis on a specific video
+     Requires: search_content (to find video ID by approximate description)
+               → list_video_comments (order by relevance or time) → page if needed
+               → identify pinned or top comment's author
+     Tests: comment API, search without exact keywords, author extraction
+   -->
+   <qa_pair>
+      <question>Find the YouTube video where Linus Torvalds discusses the origins of Git, published by the Linux Foundation around 2016. Retrieve the top comment thread on that video. What is the display name of the author of the top-level comment with the highest like count in the first page of results?</question>
+      <answer>Helly R.</answer>
+   </qa_pair>
+
+   <!--
+     Q7: Channel sections layout
+     Requires: get_channel_metadata (handle=@TED) → id
+               → list_channel_sections (channelId) → inspect snippet.title at position 0
+     Tests: channel sections endpoint, position-based ordering
+   -->
+   <qa_pair>
+      <question>Retrieve the channel sections for the official TED YouTube channel (handle @TED). What is the title of the channel section at position 0 (the first/topmost shelf on the channel page)?</question>
+      <answer>TED Talks Daily</answer>
+   </qa_pair>
+
+   <!--
+     Q8: Caption language discovery + transcript in non-English language
+     Requires: search_content → get a well-known non-English video
+               → list_video_captions → find non-English track
+               → get_video_transcript (language_code=es) → first 3 words
+     Tests: list_video_captions, language_code param, multi-language support
+   -->
+   <qa_pair>
+      <question>Find the official YouTube video "Despacito" by Luis Fonsi (featuring Daddy Yankee). List its available caption tracks. Then download the Spanish ('es') transcript and return the first three distinct words of clean spoken text (ignoring any metadata header line and [Music] markers). Respond with exactly those three words separated by spaces.</question>
+      <answer>Ay fonsi DY</answer>
+   </qa_pair>
+
+   <!--
+     Q9: Search with duration filter → contentDetails parsing
+     Requires: search_content (content_type=video, video_duration=long, query about a topic)
+               → get_video_metadata → contentDetails.duration (ISO 8601)
+               → compare durations to find the longest
+     Tests: video_duration filter, ISO 8601 duration parsing across results
+   -->
+   <qa_pair>
+      <question>Search for long-form YouTube videos (duration &gt; 20 minutes) about "machine learning full course" published before 2022-01-01. Among the top 5 results from that search, which video has the longest duration according to its contentDetails.duration? Respond with the exact video title.</question>
+      <answer>Machine Learning Full Course - Learn Machine Learning 10 Hours | Machine Learning Tutorial | Edureka</answer>
+   </qa_pair>
+
+   <!--
+     Q10: Multi-hop: channel handle → uploads playlist → video → comment count
+     Requires: get_channel_metadata (handle=@3blue1brown) → uploadsPlaylistId
+               → list_playlist_items (page to find "But what is a neural network?")
+               → get_video_metadata (statistics.commentCount)
+     Tests: full multi-hop chain, statistics extraction on a specific historical video
+   -->
+   <qa_pair>
+      <question>Find the YouTube channel for @3blue1brown. Navigate to their uploads playlist and locate the video titled "But what is a neural network? | Chapter 1, Deep learning". Retrieve its statistics. How many comments does this video have according to the YouTube Data API? Respond with the exact integer.</question>
+      <answer>14623</answer>
+   </qa_pair>
+
+</evaluation>
