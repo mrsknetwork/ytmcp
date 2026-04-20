@@ -122,27 +122,28 @@ Ask your AI to call `revoke_oauth_token` to sign out and delete your stored cred
 
 ## Available Tools
 
-| Tool                       | Auth Required                  | Description                                                                                                                                             |
-| -------------------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `get_video_transcript`     | None                           | Extract a full video transcript via `yt-dlp`. Supports `language_code` (e.g. `'es'`) and prefers manual captions by default.                            |
-| `search_content`           | API Key / OAuth                | Search for videos, channels, or playlists. Filter by date range, duration (`short`/`medium`/`long`), quality (`hd`/`standard`), region, and sort order. |
-| `get_video_metadata`       | API Key / OAuth                | Fetch metadata, duration, and stats (views, likes, comments) for specific videos.                                                                       |
-| `get_channel_metadata`     | API Key / OAuth                | Fetch channel profile, subscriber count, and uploads playlist. Accepts channel ID or `@handle`.                                                         |
-| `list_trending_videos`     | API Key / OAuth                | Fetch currently trending videos for a country and optional category.                                                                                    |
-| `list_playlists`           | API Key / OAuth                | Retrieve playlists for a channel.                                                                                                                       |
-| `list_playlist_items`      | API Key / OAuth                | List videos inside a playlist.                                                                                                                          |
-| `list_video_comments`      | API Key / OAuth                | Get top-level comment threads for a video or channel. Supports keyword filtering.                                                                       |
-| `list_comment_replies`     | API Key / OAuth                | Get replies to a specific comment thread.                                                                                                               |
-| `list_video_captions`      | API Key / OAuth                | List available caption tracks (language, type) for a video.                                                                                             |
-| `list_video_categories`    | API Key / OAuth                | List YouTube video categories by region.                                                                                                                |
-| `list_supported_languages` | API Key / OAuth                | List all languages supported by YouTube.                                                                                                                |
-| `list_supported_regions`   | API Key / OAuth                | List all regions supported by YouTube.                                                                                                                  |
-| `list_channel_activities`  | API Key / OAuth                | Get a channel's recent upload and activity feed.                                                                                                        |
-| `list_channel_sections`    | API Key / OAuth                | Get the shelf layout of a channel page.                                                                                                                 |
-| `list_subscriptions`       | API Key (public) / OAuth (own) | List subscriptions for a channel or your own account.                                                                                                   |
-| `list_channel_members`     | OAuth only                     | List paying members of your channel.                                                                                                                    |
-| `list_membership_levels`   | OAuth only                     | List membership tiers for your channel.                                                                                                                 |
-| `revoke_oauth_token`       | OAuth only                     | Sign out and delete your stored Google credentials.                                                                                                     |
+| Tool | Auth | Description |
+|------|------|-------------|
+| `get_video_transcript` | None | Download a full spoken transcript using yt-dlp. Specify `language_code` (e.g. `en`, `es`) and whether to prefer manual or auto-generated captions. Returns source metadata with the text. |
+| `search_content` | API Key | Search YouTube for videos, channels, or playlists. Filter by `order`, `published_after`, `published_before`, `video_duration`, `video_definition`, and `region_code`. Supports pagination. |
+| `get_video_metadata` | API Key | Fetch title, description, tags, duration, and stats (views, likes, comments) for one or more videos by ID. |
+| `get_channel_metadata` | API Key | Fetch channel profile, subscriber count, video count, and uploads playlist ID. Accepts a channel ID or `@handle`. |
+| `list_trending_videos` | API Key | Fetch the most popular videos on YouTube for a given `region_code` and optional `category_id`. Supports pagination. |
+| `list_playlists` | API Key | List playlists for a channel, or fetch specific playlists by ID. Returns title, description, and item count. |
+| `list_playlist_items` | API Key | List all videos inside a playlist in order. Returns title, position, and video ID for each entry. |
+| `list_video_comments` | API Key | Fetch top-level comment threads for a video or channel. Filter by keyword with `search_terms`. Supports pagination. |
+| `list_comment_replies` | API Key | Fetch replies to a specific comment thread by `parent_comment_id`. Supports pagination. |
+| `list_video_captions` | API Key | List available caption tracks for a video, including language code and type (manual or auto-generated). |
+| `list_video_categories` | API Key | List YouTube video category names and IDs for a given region. Use the IDs with `search_content` or `list_trending_videos`. |
+| `list_channel_activities` | API Key | Fetch a channel's recent activity feed, including uploads and playlist additions. |
+| `list_channel_sections` | API Key | List the shelf sections displayed on a channel's page, in order. |
+| `list_supported_languages` | API Key | List all languages supported by YouTube, with language codes and localized names. |
+| `list_supported_regions` | API Key | List all regions supported by YouTube, with region codes and names. |
+| `list_subscriptions` | API Key / OAuth | List public subscriptions for a channel by `channel_id` (API Key), or your own subscriptions with `mine=true` (OAuth). |
+| `list_channel_members` | OAuth | List current paying members of your channel. Requires an active memberships program. |
+| `list_membership_levels` | OAuth | List the membership tier names and levels configured for your channel. |
+| `revoke_oauth_token` | OAuth | Sign out and permanently delete your stored Google credentials from the server. |
+
 
 ---
 
