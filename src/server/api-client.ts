@@ -149,8 +149,9 @@ export async function ytApiRequest(endpoint: string, params: ApiParams, attempt 
 
         // Retry with exponential backoff for transient errors
         if ((res.status === 429 || res.status === 503) && attempt <= 3) {
-            const backoffMs = Math.pow(2, attempt) * 1000; // 2s, 4s, 8s
-            console.error(`YouTube API ${res.status} — retrying in ${backoffMs / 1000}s (attempt ${attempt}/3)...`);
+            const jitterMs = Math.random() * 200; // random offset between 0-200ms
+            const backoffMs = Math.pow(2, attempt) * 1000 + jitterMs; // 2s, 4s, 8s plus jitter
+            console.error(`YouTube API ${res.status} — retrying in ${(backoffMs / 1000).toFixed(2)}s (attempt ${attempt}/3)...`);
             await sleep(backoffMs);
             return ytApiRequest(endpoint, params, attempt + 1);
         }

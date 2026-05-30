@@ -32,12 +32,12 @@ const GetVideoCategoriesSchema = {
 };
 
 const GetVideoCaptionsMetadataSchema = {
-    video_id: z.string().describe("The video ID"),
+    video_id: z.string().regex(/^[a-zA-Z0-9_-]{11}$/, "Invalid video ID format").describe("The video ID"),
 };
 
 /** Tasks 3.13/3.14 — language_code + prefer_manual params */
 const DownloadVideoCaptionSchema = {
-    video_id: z.string().describe("The ID of the YouTube video to download the transcript for"),
+    video_id: z.string().regex(/^[a-zA-Z0-9_-]{11}$/, "Invalid video ID format").describe("The ID of the YouTube video to download the transcript for"),
     language_code: z.string().optional().describe("Preferred language code (e.g., 'en', 'es', 'fr', 'ja'). Defaults to English if not specified, then falls back to first available language."),
     prefer_manual: z.boolean().optional().describe("If true (default), prefer manually created captions over auto-generated ones when both are available."),
 };
