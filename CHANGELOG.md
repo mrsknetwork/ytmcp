@@ -7,6 +7,26 @@ Version numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ---
 
+## [1.0.11] - 2026-07-09
+
+### Added
+
+- **Transcript segmenting** - Added `start_minutes` and `end_minutes` optional parameters to `get_video_transcript` to support retrieving specific portions of a video transcript.
+- **Transcript size limit** - Added `max_characters` optional parameter (defaults to `100,000` characters) to `get_video_transcript` to automatically truncate large transcripts and avoid LLM context-overflow/transport errors.
+
+### Changed
+
+- **Dependencies upgraded** - Upgraded `googleapis` to `^173.0.0`, `zod` to `^4.4.3`, and `typescript` to `^7.0.2` to resolve deprecated packages and ensure modern API usage.
+- **`search_content` fallback** - The search tool now automatically enforces `type: "video"` when definition or duration filters are specified, preventing `400 Bad Request` API errors.
+
+### Fixed
+
+- **Security vulnerabilities** - Resolved vulnerabilities in transitive dependencies `fast-uri` and `brace-expansion` by upgrading to `3.1.3` and `2.1.2` respectively via NPM overrides.
+- **`search_content` definition mapping** - Correctly mapped `"hd"` from input options to the YouTube API's expected `"high"` parameter.
+- **VTT timestamp filtering** - Fixed a transcript parsing bug where standard transcript lines starting with timestamp numbers (like `"10:30"`) were accidentally removed. Parser now filters timing lines (`-->`) and numeric cue IDs precisely.
+
+---
+
 ## [1.0.9] - 2026-04-20
 
 ### Added

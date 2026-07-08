@@ -25,15 +25,19 @@ export function registerSearchTools(server: McpServer): void {
         },
         async (args) => {
             try {
+                let typeParam = args.content_type;
+                if (!typeParam && (args.video_duration || args.video_definition)) {
+                    typeParam = "video";
+                }
                 const data = await ytApiRequest("search", {
                     q: args.search_query,
                     maxResults: args.max_results ?? 5,
-                    type: args.content_type ?? undefined,
+                    type: typeParam,
                     order: args.order,
                     publishedAfter: args.published_after,
                     publishedBefore: args.published_before,
                     videoDuration: args.video_duration,
-                    videoDefinition: args.video_definition,
+                    videoDefinition: args.video_definition === "hd" ? "high" : args.video_definition,
                     regionCode: args.region_code,
                     pageToken: args.page_token,
                 });

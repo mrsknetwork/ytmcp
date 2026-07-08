@@ -15,7 +15,7 @@ console.log = console.error;
 
 const server = new McpServer({
     name: "@mrsknetwork/ytmcp",
-    version: "1.0.9",
+    version: "1.0.11",
 });
 
 // Register all tools grouped by domain

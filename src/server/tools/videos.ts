@@ -40,7 +40,26 @@ const DownloadVideoCaptionSchema = {
     video_id: z.string().regex(/^[a-zA-Z0-9_-]{11}$/, "Invalid video ID format").describe("The ID of the YouTube video to download the transcript for"),
     language_code: z.string().optional().describe("Preferred language code (e.g., 'en', 'es', 'fr', 'ja'). Defaults to English if not specified, then falls back to first available language."),
     prefer_manual: z.boolean().optional().describe("If true (default), prefer manually created captions over auto-generated ones when both are available."),
+    start_minutes: z.number().optional().describe("Start time in minutes from the beginning of the video."),
+    end_minutes: z.number().optional().describe("End time in minutes from the beginning of the video."),
+    max_characters: z.number().optional().describe("Maximum character length of the returned transcript to prevent context limit errors. Defaults to 100000. Set to 0 or a very large number for unlimited."),
 };
+
+function parseVttTimestamp(timestampStr: string): number {
+    const parts = timestampStr.split(':');
+    let hours = 0;
+    let minutes = 0;
+    let seconds = 0;
+    if (parts.length === 3) {
+        hours = parseInt(parts[0], 10);
+        minutes = parseInt(parts[1], 10);
+        seconds = parseFloat(parts[2]);
+    } else if (parts.length === 2) {
+        minutes = parseInt(parts[0], 10);
+        seconds = parseFloat(parts[1]);
+    }
+    return (hours * 3600 + minutes * 60 + seconds) * 1000;
+}
 
 // ── Tool Registrations ─────────────────────────────────────────────────────────
 
@@ -152,6 +171,9 @@ export function registerVideoTools(server: McpServer): void {
         },
         async (args) => {
             try {
+                const startMs = args.start_minutes !== undefined ? args.start_minutes * 60 * 1000 : undefined;
+                const endMs = args.end_minutes !== undefined ? args.end_minutes * 60 * 1000 : undefined;
+
                 const output: any = await ytDlp(`https://www.youtube.com/watch?v=${args.video_id}`, {
                     dumpJson: true,
                     skipDownload: true,
@@ -218,6 +240,11 @@ export function registerVideoTools(server: McpServer): void {
                     const segments: string[] = [];
                     for (const event of events) {
                         if (!event.segs) continue;
+
+                        const tStartMs = typeof event.tStartMs === 'number' ? event.tStartMs : 0;
+                        if (startMs !== undefined && tStartMs < startMs) continue;
+                        if (endMs !== undefined && tStartMs > endMs) continue;
+
                         const text = event.segs
                             .map((seg: any) => seg.utf8 || '')
                             .join('')
@@ -245,7 +272,24 @@ export function registerVideoTools(server: McpServer): void {
                     const extractedLines: string[] = [];
                     for (const block of cueBlocks) {
                         const lines = block.split('\n').map((l: string) => l.trim()).filter((l: string) => l.length > 0);
-                        const textLines = lines.filter((l: string) => !/^\d{2}:\d{2}/.test(l));
+
+                        // Parse timestamp if filter is active
+                        if (startMs !== undefined || endMs !== undefined) {
+                            const timingLine = lines.find((l: string) => l.includes('-->'));
+                            if (timingLine) {
+                                try {
+                                    const startStr = timingLine.split('-->')[0].trim();
+                                    const blockStartMs = parseVttTimestamp(startStr);
+                                    if (startMs !== undefined && blockStartMs < startMs) continue;
+                                    if (endMs !== undefined && blockStartMs > endMs) continue;
+                                } catch (e) {
+                                    // ignore and proceed
+                                }
+                            }
+                        }
+
+                        // Filter out timing lines and numeric cue identifiers
+                        const textLines = lines.filter((l: string) => !l.includes('-->') && !/^\d+$/.test(l));
                         if (textLines.length === 0) continue;
 
                         let lastLine = textLines[textLines.length - 1]
@@ -263,12 +307,31 @@ export function registerVideoTools(server: McpServer): void {
                 }
 
                 if (!cleanText) {
-                    return formatError(`Found a ${resolvedType} caption track in '${resolvedLang}' but it contained no readable text.`);
+                    return formatError(`Found a ${resolvedType} caption track in '${resolvedLang}' but it contained no readable text inside the specified range.`);
                 }
 
-                // Task 3.14: Prepend source metadata
-                const metadata = `[Transcript source: ${resolvedType} captions, language: ${resolvedLang}]\n\n`;
-                return success(metadata + cleanText);
+                // Truncate to avoid context limit if necessary
+                const maxChars = args.max_characters !== undefined ? args.max_characters : 100000;
+                let truncated = false;
+                let finalCleanText = cleanText;
+                if (maxChars > 0 && cleanText.length > maxChars) {
+                    finalCleanText = cleanText.substring(0, maxChars);
+                    truncated = true;
+                }
+
+                // Prepend source metadata
+                let metadata = `[Transcript source: ${resolvedType} captions, language: ${resolvedLang}`;
+                if (args.start_minutes !== undefined || args.end_minutes !== undefined) {
+                    metadata += `, range: ${args.start_minutes ?? 0}m - ${args.end_minutes ?? 'end'}m`;
+                }
+                metadata += `]\n\n`;
+
+                let responseText = metadata + finalCleanText;
+                if (truncated) {
+                    responseText += `\n\n[Transcript truncated to ${maxChars} characters. You can use 'start_minutes' and 'end_minutes' parameters to fetch specific parts of the video, or set 'max_characters' to a larger number or 0 for unlimited.]`;
+                }
+
+                return success(responseText);
 
             } catch (error) {
                 return formatError(`Error fetching transcript via yt-dlp: ${error instanceof Error ? error.message : String(error)}`);
