@@ -7,6 +7,13 @@
   "bin": {
     "ytmcp": "build/server/index.js"
   },
+  "files": [
+    "build",
+    "bin",
+    "README.md",
+    "INSTRUCTIONS.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsc",
     "start": "node build/server/index.js"
@@ -36,8 +43,6 @@
   "devDependencies": {
     "@types/express": "^5.0.6",
     "@types/node": "^25.6.0",
-    "shx": "^0.4.0",
-    "ts-node": "^10.9.2",
     "typescript": "^7.0.2"
   },
   "overrides": {
