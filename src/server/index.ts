@@ -1,7 +1,10 @@
 #!/usr/bin/env node
 
+// Ensure no library accidentally logs to stdout and breaks MCP protocol
+console.log = console.error;
+
 import dotenv from "dotenv";
-dotenv.config();
+dotenv.config({ quiet: true });
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
@@ -12,9 +15,6 @@ import { registerPlaylistTools } from "./tools/playlists.js";
 import { registerCommentTools } from "./tools/comments.js";
 import { registerOAuthTools } from "./tools/oauth-tools.js";
 import { registerI18nTools } from "./tools/i18n.js";
-
-// Ensure no library accidentally logs to stdout and breaks MCP protocol
-console.log = console.error;
 
 const server = new McpServer({
     name: "@mrsknetwork/ytmcp",
