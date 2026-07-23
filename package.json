@@ -16,7 +16,8 @@
   ],
   "scripts": {
     "build": "tsc",
-    "start": "node build/server/index.js"
+    "start": "node build/server/index.js",
+    "test:client": "node scripts/test-client.js"
   },
   "keywords": [
     "mcp",

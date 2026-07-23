@@ -205,56 +205,50 @@ export function formatError(error: unknown) {
 // ----------------------------------------------------------------------
 
 const PageInfoSchema = z.object({
-    totalResults: z.number(),
-    resultsPerPage: z.number(),
-});
+    totalResults: z.number().optional(),
+    resultsPerPage: z.number().optional(),
+}).passthrough();
 
 export const VideoListOutputSchema = z.object({
-    kind: z.string(),
+    kind: z.string().optional(),
+    etag: z.string().optional(),
     nextPageToken: z.string().optional(),
     pageInfo: PageInfoSchema.optional(),
     items: z.array(z.object({
-        kind: z.string(),
-        id: z.string(),
+        kind: z.string().optional(),
+        etag: z.string().optional(),
+        id: z.any(),
         snippet: z.record(z.string(), z.any()).optional(),
         contentDetails: z.record(z.string(), z.any()).optional(),
-        statistics: z.object({
-            viewCount: z.string().optional(),
-            likeCount: z.string().optional(),
-            favoriteCount: z.string().optional(),
-            commentCount: z.string().optional(),
-        }).optional(),
-    })),
-});
+        statistics: z.record(z.string(), z.any()).optional(),
+    }).passthrough()).optional(),
+}).passthrough();
 
 export const ChannelListOutputSchema = z.object({
-    kind: z.string(),
+    kind: z.string().optional(),
+    etag: z.string().optional(),
     nextPageToken: z.string().optional(),
     pageInfo: PageInfoSchema.optional(),
     items: z.array(z.object({
-        kind: z.string(),
-        id: z.string(),
+        kind: z.string().optional(),
+        etag: z.string().optional(),
+        id: z.any(),
         snippet: z.record(z.string(), z.any()).optional(),
-        statistics: z.object({
-            viewCount: z.string().optional(),
-            subscriberCount: z.string().optional(),
-            hiddenSubscriberCount: z.boolean().optional(),
-            videoCount: z.string().optional(),
-        }).optional(),
+        statistics: z.record(z.string(), z.any()).optional(),
         contentDetails: z.record(z.string(), z.any()).optional(),
-    })),
-});
+    }).passthrough()).optional(),
+}).passthrough();
 
 export const PlaylistListOutputSchema = z.object({
-    kind: z.string(),
+    kind: z.string().optional(),
+    etag: z.string().optional(),
     nextPageToken: z.string().optional(),
     pageInfo: PageInfoSchema.optional(),
     items: z.array(z.object({
-        kind: z.string(),
-        id: z.string(),
+        kind: z.string().optional(),
+        etag: z.string().optional(),
+        id: z.any(),
         snippet: z.record(z.string(), z.any()).optional(),
-        contentDetails: z.object({
-            itemCount: z.number().optional(),
-        }).optional(),
-    })),
-});
+        contentDetails: z.record(z.string(), z.any()).optional(),
+    }).passthrough()).optional(),
+}).passthrough();
