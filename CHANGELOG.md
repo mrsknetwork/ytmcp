@@ -5,6 +5,19 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Version numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.13] - 2026-07-23
+
+### Added
+
+- **Local `yt-dlp` Binary**: Created `bin/yt-dlp` directory executable to isolate `yt-dlp` binary execution.
+- **User-Agent Anti-Blocking**: Configured modern browser User-Agent headers across `yt-dlp` and caption `fetch` requests to prevent Google bot blocking and rate limiting. Customizable via `YT_DLP_USER_AGENT` env var and `user_agent` tool parameter.
+- **`.env` Configuration**: Loaded environment variables via `dotenv` at startup, removing CLI argument parameter passing.
+- **LLM Instructions**: Added `INSTRUCTIONS.md` / `instruction.md` guide for AI assistants.
+
+### Fixed
+
+- **Dependencies & Vulnerabilities**: Fixed npm vulnerabilities (`0 vulnerabilities`) and updated package dependencies.
+
 ---
 
 ## [1.0.12] - 2026-07-09

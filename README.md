@@ -58,14 +58,19 @@ Unlocks all public data tools. Best for search, metadata, comments, trending vid
 2. Enable **YouTube Data API v3** for your project.
 3. Go to **Credentials** and create an **API Key**.
 
-**2. Add to your MCP client config**
+**2. Add to your MCP client config or .env file**
+
+Pass `GOOGLE_API_KEY` via `env` in your MCP client config, or place `GOOGLE_API_KEY=YOUR_KEY` inside a `.env` file in the project directory.
 
 ```json
 {
   "mcpServers": {
     "youtube-mcp": {
       "command": "npx",
-      "args": ["-y", "@mrsknetwork/ytmcp@latest", "YOUR_GOOGLE_API_KEY"]
+      "args": ["-y", "@mrsknetwork/ytmcp@latest"],
+      "env": {
+        "GOOGLE_API_KEY": "YOUR_GOOGLE_API_KEY"
+      }
     }
   }
 }
@@ -159,7 +164,8 @@ git clone https://github.com/mrsknetwork/ytmcp.git
 cd ytmcp
 npm install
 npm run build
-node build/server/index.js "YOUR_API_KEY"
+cp .env.example .env # Set GOOGLE_API_KEY inside .env
+node build/server/index.js
 ```
 
 </details>

@@ -1,5 +1,8 @@
 #!/usr/bin/env node
 
+import dotenv from "dotenv";
+dotenv.config();
+
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { registerSearchTools } from "./tools/search.js";
@@ -15,7 +18,7 @@ console.log = console.error;
 
 const server = new McpServer({
     name: "@mrsknetwork/ytmcp",
-    version: "1.0.12",
+    version: "1.0.13",
 });
 
 // Register all tools grouped by domain

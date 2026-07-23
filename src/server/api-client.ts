@@ -35,7 +35,7 @@ export async function getCredentials(apiKey?: string) {
 }
 
 export async function ensureApiAccess() {
-    const creds = await getCredentials(process.argv[2]);
+    const creds = await getCredentials();
     if (currentAuthType === 'guest') {
         throw new Error("This tool requires a Google API Key or OAuth credentials. In Guest Mode, only the 'get_video_transcript' tool is available.");
     }
@@ -43,7 +43,7 @@ export async function ensureApiAccess() {
 }
 
 export async function ensureOAuthAccess() {
-    const creds = await getCredentials(process.argv[2]);
+    const creds = await getCredentials();
     if (currentAuthType !== 'oauth') {
         throw new Error("This tool requires OAuth authentication. Please configure GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in your MCP client config.");
     }
@@ -142,7 +142,7 @@ export async function ytApiRequest(endpoint: string, params: ApiParams, attempt 
         const errBody = await res.text();
         const errMessage = parseYouTubeError(res.status, res.statusText, errBody);
 
-        // Bail immediately on quota exceeded — retrying will not help
+        // Bail immediately on quota exceeded - retrying will not help
         if (res.status === 403 && errBody.includes('quotaExceeded')) {
             throw new Error(errMessage);
         }
@@ -151,7 +151,7 @@ export async function ytApiRequest(endpoint: string, params: ApiParams, attempt 
         if ((res.status === 429 || res.status === 503) && attempt <= 3) {
             const jitterMs = Math.random() * 200; // random offset between 0-200ms
             const backoffMs = Math.pow(2, attempt) * 1000 + jitterMs; // 2s, 4s, 8s plus jitter
-            console.error(`YouTube API ${res.status} — retrying in ${(backoffMs / 1000).toFixed(2)}s (attempt ${attempt}/3)...`);
+            console.error(`YouTube API ${res.status} - retrying in ${(backoffMs / 1000).toFixed(2)}s (attempt ${attempt}/3)...`);
             await sleep(backoffMs);
             return ytApiRequest(endpoint, params, attempt + 1);
         }
@@ -181,9 +181,21 @@ export function successStructured(data: unknown) {
 }
 
 export function formatError(error: unknown) {
-    const message = error instanceof Error ? error.message : String(error);
+    let message = error instanceof Error ? error.message : String(error);
+
+    // Provide friendly guidance for common connection/network issues
+    if (message.includes("ENOTFOUND") || message.includes("ECONNREFUSED") || message.includes("fetch failed")) {
+        message = "Network Error: Unable to connect to YouTube services. Please check your network connection.";
+    } else if (message.includes("ETIMEDOUT") || message.includes("ESOCKETTIMEDOUT")) {
+        message = "Timeout Error: Request to YouTube services timed out. Please try again.";
+    }
+
+    const formattedText = message.startsWith("Error") || message.startsWith("YouTube API Error") || message.startsWith("Network Error") || message.startsWith("Timeout Error")
+        ? message
+        : `Error: ${message}`;
+
     return {
-        content: [{ type: "text" as const, text: `Error: ${message}` }],
+        content: [{ type: "text" as const, text: formattedText }],
         isError: true
     };
 }

@@ -1,6 +1,11 @@
+import path from "path";
+import fs from "fs";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import ytDlp from "yt-dlp-exec";
+import ytDlp, { create as createYtDlp } from "yt-dlp-exec";
+
+const binYtDlpPath = path.resolve(process.cwd(), "bin", "yt-dlp");
+const ytDlpRunner = fs.existsSync(binYtDlpPath) ? createYtDlp(binYtDlpPath) : ytDlp;
 import {
     ytApiRequest,
     success,
@@ -19,7 +24,7 @@ const GetVideoDetailsSchema = {
     max_results: z.number().optional().describe("Default 5"),
 };
 
-/** Task 4.4 — dedicated trending videos tool */
+/** Task 4.4 - dedicated trending videos tool */
 const GetTrendingVideosSchema = {
     region_code: z.string().optional().describe("ISO 3166-1 alpha-2 country code (e.g., 'US', 'IN', 'GB'). Defaults to 'US'."),
     category_id: z.string().optional().describe("YouTube video category ID to filter trending videos. Use list_video_categories to discover valid IDs for your region."),
@@ -35,7 +40,7 @@ const GetVideoCaptionsMetadataSchema = {
     video_id: z.string().regex(/^[a-zA-Z0-9_-]{11}$/, "Invalid video ID format").describe("The video ID"),
 };
 
-/** Tasks 3.13/3.14 — language_code + prefer_manual params */
+/** Tasks 3.13/3.14 - language_code + prefer_manual params */
 const DownloadVideoCaptionSchema = {
     video_id: z.string().regex(/^[a-zA-Z0-9_-]{11}$/, "Invalid video ID format").describe("The ID of the YouTube video to download the transcript for"),
     language_code: z.string().optional().describe("Preferred language code (e.g., 'en', 'es', 'fr', 'ja'). Defaults to English if not specified, then falls back to first available language."),
@@ -43,6 +48,7 @@ const DownloadVideoCaptionSchema = {
     start_minutes: z.number().optional().describe("Start time in minutes from the beginning of the video."),
     end_minutes: z.number().optional().describe("End time in minutes from the beginning of the video."),
     max_characters: z.number().optional().describe("Maximum character length of the returned transcript to prevent context limit errors. Defaults to 100000. Set to 0 or a very large number for unlimited."),
+    user_agent: z.string().optional().describe("Custom User-Agent string to avoid rate limits or bot blocking. Defaults to YT_DLP_USER_AGENT env var or a standard modern browser User-Agent."),
 };
 
 function parseVttTimestamp(timestampStr: string): number {
@@ -165,7 +171,7 @@ export function registerVideoTools(server: McpServer): void {
     server.registerTool(
         "get_video_transcript",
         {
-            description: "Download the full spoken transcript of a YouTube video as clean plain text using yt-dlp — no API credentials required. Tries manual English captions first (or specified language_code), then auto-generated, then falls back to the first available language. Returns concatenated plain text plus metadata about which language and caption type was used. Ideal for content research without consuming YouTube API quota.",
+            description: "Download the full spoken transcript of a YouTube video as clean plain text using yt-dlp - no API credentials required. Tries manual English captions first (or specified language_code), then auto-generated, then falls back to the first available language. Returns concatenated plain text plus metadata about which language and caption type was used. Ideal for content research without consuming YouTube API quota.",
             inputSchema: DownloadVideoCaptionSchema,
             annotations: { readOnlyHint: true, openWorldHint: true },
         },
@@ -173,10 +179,16 @@ export function registerVideoTools(server: McpServer): void {
             try {
                 const startMs = args.start_minutes !== undefined ? args.start_minutes * 60 * 1000 : undefined;
                 const endMs = args.end_minutes !== undefined ? args.end_minutes * 60 * 1000 : undefined;
+                const defaultUserAgent = process.env.YT_DLP_USER_AGENT || process.env.USER_AGENT || "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
+                const selectedUserAgent = args.user_agent || defaultUserAgent;
 
-                const output: any = await ytDlp(`https://www.youtube.com/watch?v=${args.video_id}`, {
+                const output: any = await ytDlpRunner(`https://www.youtube.com/watch?v=${args.video_id}`, {
                     dumpJson: true,
                     skipDownload: true,
+                    userAgent: selectedUserAgent,
+                    addHeader: [
+                        'Accept-Language: en-US,en;q=0.9',
+                    ],
                 });
 
                 const autoSubs: Record<string, any[]> = output.automatic_captions || {};
@@ -228,12 +240,17 @@ export function registerVideoTools(server: McpServer): void {
                 resolvedLang = best.lang;
                 resolvedType = best.type;
 
-                // Parse json3 track (preferred — cleanest format)
+                // Parse json3 track (preferred - cleanest format)
                 const json3Track = captionsList.find((c: any) => c.ext === 'json3');
                 let cleanText = '';
 
                 if (json3Track?.url) {
-                    const res = await fetch(json3Track.url);
+                    const res = await fetch(json3Track.url, {
+                        headers: {
+                            'User-Agent': selectedUserAgent,
+                            'Accept-Language': 'en-US,en;q=0.9',
+                        },
+                    });
                     const json3 = await res.json() as any;
                     const events: any[] = json3.events || [];
 
@@ -261,7 +278,12 @@ export function registerVideoTools(server: McpServer): void {
                     const vttTrack = captionsList.find((c: any) => c.ext === 'vtt') || captionsList[0];
                     if (!vttTrack?.url) return formatError("No valid caption track URL found.");
 
-                    const res = await fetch(vttTrack.url);
+                    const res = await fetch(vttTrack.url, {
+                        headers: {
+                            'User-Agent': selectedUserAgent,
+                            'Accept-Language': 'en-US,en;q=0.9',
+                        },
+                    });
                     const vtt = await res.text();
 
                     const cueBlocks = vtt

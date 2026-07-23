@@ -25,7 +25,7 @@ export function registerChannelTools(server: McpServer): void {
     server.registerTool(
         "get_channel_metadata",
         {
-            description: "Fetch channel profile, statistics, and content details by channel ID or @handle. Returns snippet (title, description, country, thumbnails), statistics (subscriberCount, videoCount, viewCount), and contentDetails (uploads playlist ID — use with list_playlist_items to browse all channel videos). Accepts either channel_ids (comma-separated) or handle (e.g., '@MrBeast').",
+            description: "Fetch channel profile, statistics, and content details by channel ID or @handle. Returns snippet (title, description, country, thumbnails), statistics (subscriberCount, videoCount, viewCount), and contentDetails (uploads playlist ID - use with list_playlist_items to browse all channel videos). Accepts either channel_ids (comma-separated) or handle (e.g., '@MrBeast').",
             inputSchema: GetChannelDetailsSchema,
             outputSchema: ChannelListOutputSchema,
             annotations: { readOnlyHint: true, openWorldHint: true },
