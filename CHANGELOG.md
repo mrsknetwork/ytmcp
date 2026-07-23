@@ -5,6 +5,15 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Version numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.14] - 2026-07-23
+
+### Fixed
+- **STDIO JSON-RPC Transport Isolation**: Moved console.log redirect to top of index.ts before dotenv.config({ quiet: true }) to protect STDOUT JSON-RPC frames.
+- **Output Schema Passthrough**: Added .passthrough() to Zod output schemas allowing etag metadata without MCP schema validation errors.
+
+### Added
+- **MCP Test Suite & Demo Scripts**: Added scripts/test-client.js and scripts/show-tools-output.js for 15-tool verification and output display (npm run test:client, npm run show:tools).
+
 ## [1.0.13] - 2026-07-23
 
 ### Added

@@ -18,7 +18,7 @@ import { registerI18nTools } from "./tools/i18n.js";
 
 const server = new McpServer({
     name: "@mrsknetwork/ytmcp",
-    version: "1.0.13",
+    version: "1.0.14",
 });
 
 // Register all tools grouped by domain
